@@ -4,18 +4,10 @@ import {
   Column,
   CreateDateColumn,
   UpdateDateColumn,
+  OneToMany,
 } from 'typeorm';
-
-export enum DocumentStatuses {
-  DRAFT = 'draft',
-  UPLOADED = 'uploaded',
-  RECIPIENT_ADDED = 'recipient added',
-  SENT = 'sent',
-  DELIVERED = 'delivered',
-  SIGNED = 'signed',
-  COMPLETED = 'completed',
-  BLOCKCHAINED = 'blockchained',
-}
+import { User } from './user.entity';
+import { DocumentStatuses } from '../../common/enums/entities.enum';
 
 @Entity()
 export class Document {
@@ -47,7 +39,7 @@ export class Document {
   @Column('int', { default: 0 })
   signed_by: number;
 
-  @Column('text')
+  @Column('text', { nullable: true })
   check_sum: string;
 
   @CreateDateColumn()
@@ -55,4 +47,9 @@ export class Document {
 
   @UpdateDateColumn()
   updated_at: Date;
+
+  @OneToMany(() => User, (user) => user.document, {
+    cascade: true,
+  })
+  users: User[];
 }

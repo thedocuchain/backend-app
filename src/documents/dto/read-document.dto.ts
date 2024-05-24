@@ -1,0 +1,80 @@
+import {
+  IsArray,
+  IsDateString,
+  IsInt,
+  IsString,
+  IsUUID,
+} from 'class-validator';
+import { ApiProperty } from '@nestjs/swagger';
+import { DocumentStatuses } from '../../common/enums/entities.enum';
+import { ReadUserDto } from '../../users/dto/read-user.dto';
+
+export class ReadDocumentDto {
+  @ApiProperty({
+    example: 'b5c8ef1f-6629-4be4-a570-6826e110b794',
+  })
+  @IsUUID()
+  id: string;
+
+  @ApiProperty({
+    example: 'Contract N2',
+  })
+  @IsString()
+  name: string;
+
+  @ApiProperty({
+    example: 'application/pdf',
+  })
+  @IsString()
+  type: string;
+
+  @ApiProperty({
+    example: DocumentStatuses.DRAFT,
+  })
+  @IsString()
+  status: DocumentStatuses;
+
+  @ApiProperty({
+    example: '91f775524508900f300ffff6872bb5f806398440',
+  })
+  @IsString()
+  hash: string;
+
+  @ApiProperty({
+    example: '91f775524508900f300ffff6872bb5f806398440',
+  })
+  @IsString()
+  blockchain_transaction: string;
+
+  @ApiProperty({
+    example: 'fc027ff1-5e94-4933-9875-78d1b8a9676f',
+  })
+  @IsString()
+  file_storage_id: string;
+
+  @ApiProperty({
+    example: 3,
+  })
+  @IsInt()
+  signed_by: number;
+
+  check_sum: string;
+
+  @ApiProperty({
+    example: '2021-01-20T12:00:00.000Z',
+  })
+  @IsDateString()
+  created_at: Date;
+
+  @ApiProperty({
+    example: '2021-01-20T12:00:00.000Z',
+  })
+  @IsDateString()
+  updated_at: Date;
+
+  @ApiProperty({
+    example: [],
+  })
+  @IsArray()
+  users: ReadUserDto[];
+}
