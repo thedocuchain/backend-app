@@ -1,46 +1,37 @@
-import {
-  Entity,
-  PrimaryGeneratedColumn,
-  Column,
-  ManyToOne,
-  JoinColumn,
-} from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, ManyToOne } from 'typeorm';
 import { User } from './user.entity';
-import { Document } from './document.entity';
-import { Role } from './role.entity';
+import { UserRoles } from '../../common/enums/entities.enum';
 
 @Entity()
-export class Signatures {
+export class Signature {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @ManyToOne(() => User)
-  @JoinColumn({ name: 'user_id' })
-  user: User;
-
-  @ManyToOne(() => Document)
-  @JoinColumn({ name: 'document_id' })
-  document: Document;
-
-  @ManyToOne(() => Role)
-  @JoinColumn({ name: 'role_id' })
-  role: Role;
-
-  @Column('boolean')
+  @Column('boolean', { default: false })
   signed: boolean;
 
-  @Column('text')
+  @Column('text', { nullable: true })
   sign_font: string;
 
-  @Column('timestamptz')
+  @Column('timestamptz', { nullable: true })
   sign_date: Date;
 
-  @Column('boolean')
+  @Column('boolean', { default: false })
   notified: boolean;
 
-  @Column('timestamptz')
+  @Column('timestamptz', { nullable: true })
   last_notify_date: Date;
 
-  @Column('text')
+  @Column('text', { nullable: true })
   check_sum: string;
+
+  @Column({
+    type: 'enum',
+    enum: UserRoles,
+    default: UserRoles.WATCHER,
+  })
+  name: UserRoles;
+
+  @ManyToOne(() => User, (user) => user.signatures)
+  user: User;
 }

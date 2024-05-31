@@ -17,3 +17,16 @@ $ docker-compose up -d
 ```bash
 $ docker exec -it backend-app npm run typeorm:run-migrations
 ```
+
+## Revert the database migrations
+
+```bash
+$ docker exec -it backend-app npm run typeorm:revert-migration
+```
+
+## Generate the database migrations
+
+```bash
+$ docker exec -it backend-app npm run typeorm:generate-migration --name=initial_tables
+```
+
