@@ -70,10 +70,25 @@ export class FileStorageService {
       .file(path)
       .getSignedUrl({
         action: 'read',
-        expires: Date.now() + 24 * 1000 * 60 * 60, // Link expires in 24 hour
+        expires: Date.now() + 24 * 1000 * 60 * 60,
         version: 'v4',
+        responseType: 'application/pdf',
+        responseDisposition: 'inline',
       });
 
     return signedUrl;
+  }
+
+  async replaceFile(
+    path: string,
+    newMedia: Buffer,
+    newMetadata: Map<string, string>,
+  ) {
+    await this.delete(path);
+
+    const metadataArray = Array.from(newMetadata.entries()).map(
+      ([key, value]) => ({ [key]: value }),
+    );
+    await this.save(path, newMedia, metadataArray);
   }
 }
