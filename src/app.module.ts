@@ -5,6 +5,8 @@ import { getDatabaseConfig } from './configs/postgres.config';
 import { FileStorageModule } from './file-storage/file-storage.module';
 import { DocumentsModule } from './documents/documents.module';
 import { UsersModule } from './users/users.module';
+import { PdfModule } from './pdf/pdf.module';
+import { SignaturesModule } from './signatures/signatures.module';
 
 @Module({
   imports: [
@@ -17,6 +19,8 @@ import { UsersModule } from './users/users.module';
     FileStorageModule,
     DocumentsModule,
     UsersModule,
+    PdfModule,
+    SignaturesModule,
   ],
   providers: [],
 })
