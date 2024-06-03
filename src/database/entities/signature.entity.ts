@@ -1,6 +1,5 @@
 import { Entity, PrimaryGeneratedColumn, Column, ManyToOne } from 'typeorm';
 import { User } from './user.entity';
-import { UserRoles } from '../../common/enums/entities.enum';
 
 @Entity()
 export class Signature {
@@ -22,15 +21,14 @@ export class Signature {
   @Column('timestamptz', { nullable: true })
   last_notify_date: Date;
 
+  @Column('integer')
+  y_coordinate: number;
+
+  @Column('integer')
+  page_number: number;
+
   @Column('text', { nullable: true })
   check_sum: string;
-
-  @Column({
-    type: 'enum',
-    enum: UserRoles,
-    default: UserRoles.WATCHER,
-  })
-  name: UserRoles;
 
   @ManyToOne(() => User, (user) => user.signatures)
   user: User;

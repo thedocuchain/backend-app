@@ -11,6 +11,10 @@ import { DownloadDocumentDto } from './dto/download-document.dto';
 import { ConfigService } from '@nestjs/config';
 import { UsersService } from '../users/users.service';
 import { UpdateDocumentDto } from './dto/update-document.dto';
+import { PdfService } from '../pdf/pdf.service';
+import { UserRoles } from '../common/enums/entities.enum';
+import { SignaturesService } from '../signatures/signatures.service';
+import { IDocumentWithInitials } from '../pdf/interfaces/pdf.interface';
 
 @Injectable()
 export class DocumentsService {
@@ -20,6 +24,8 @@ export class DocumentsService {
     private readonly fileStorageService: FileStorageService,
     private readonly usersService: UsersService,
     private readonly configService: ConfigService,
+    private readonly pdfService: PdfService,
+    private readonly signaturesService: SignaturesService,
   ) {}
   public async create(file: Express.Multer.File): Promise<UploadDocumentDto> {
     if (!file) {
@@ -81,7 +87,7 @@ export class DocumentsService {
     }
 
     if (users.length > 0) {
-      const usersPromises = users.map((user) => {
+      const usersPromises = users.map(async (user) => {
         return this.usersService.create(user, document);
       });
       await Promise.all(usersPromises);
@@ -89,7 +95,9 @@ export class DocumentsService {
 
     await this.documentRepository.update({ id }, { name: documentName });
 
-    return this.findOne(id);
+    const updatedDocument = await this.findOne(id);
+
+    return await this.setInitials(updatedDocument);
   }
 
   public async findOne(id: string): Promise<Document> {
@@ -118,5 +126,42 @@ export class DocumentsService {
         document.file_storage_id,
       ),
     };
+  }
+
+  private async setInitials(document: Document): Promise<Document> {
+    const signers = document.users.filter(
+      (user) => user.role === UserRoles.SIGNER,
+    );
+
+    const documentFile = await this.fileStorageService.getWithMetaData(
+      document.file_storage_id,
+    );
+    const documentWithInitials: IDocumentWithInitials =
+      await this.pdfService.createInitials(documentFile.buffer, signers);
+
+    const usersWithCoords = documentWithInitials.usersWithCoords;
+
+    if (signers.length > 0) {
+      const signaturesPromises = usersWithCoords.map(async (userWithCoords) => {
+        const signature = {
+          page_number: userWithCoords.pageNumber,
+          y_coordinate: userWithCoords.ycord,
+          signed: false,
+          notified: false,
+        };
+
+        return this.signaturesService.create(signature, userWithCoords);
+      });
+
+      await Promise.all(signaturesPromises);
+    }
+
+    await this.fileStorageService.replaceFile(
+      document.file_storage_id,
+      documentWithInitials.file,
+      documentFile.metadata,
+    );
+
+    return document;
   }
 }
