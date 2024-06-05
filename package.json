@@ -23,7 +23,8 @@
     "typeorm:run-migrations-prod": "npm run typeorm migration:run -- -d ./dist/type-ormconfig.js",
     "typeorm:generate-migration": "npm run typeorm -- -d type-ormconfig.ts migration:generate ./src/database/migrations/$npm_config_name",
     "typeorm:create-migration": "npm run typeorm -- migration:create ./src/database/migrations/$npm_config_name",
-    "typeorm:revert-migration": "npm run typeorm -- -d type-ormconfig.ts migration:revert"
+    "typeorm:revert-migration": "npm run typeorm -- -d type-ormconfig.ts migration:revert",
+    "typeorm:revert-migration-prod": "npm run typeorm migration:revert -- -d ./dist/type-ormconfig.js"
   },
   "dependencies": {
     "@google-cloud/storage": "^7.11.0",
