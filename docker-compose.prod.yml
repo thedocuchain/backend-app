@@ -7,23 +7,16 @@ services:
       - POSTGRES_USER=${DATABASE_USER}
       - POSTGRES_PASSWORD=${DATABASE_PASSWORD}
       - POSTGRES_DB=${DATABASE_NAME}
-    ports:
-      - '5432:5432'
     volumes:
       - db:/var/lib/postgresql/data
-  docuchain-backend-app:
+  backend-app:
     container_name: backend-app
-    image: backend-app
+    image: docuchain-backend:latest
     env_file:
-      - .env
-    build:
-      context: .
-      target: development
-      dockerfile: ./Dockerfile
+      - .env-compose
     ports:
-      - "3000:3000"
+      - "3001:3001"
     depends_on:
       - db
 volumes:
   db:
-    driver: local

@@ -16,13 +16,14 @@ import { ReadDocumentDto } from './dto/read-document.dto';
 import { DownloadDocumentDto } from './dto/download-document.dto';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { UpdateDocumentDto } from './dto/update-document.dto';
+import { SignDocumentDto } from './dto/sign-document.dto';
 
 @ApiTags('documents')
 @Controller('documents')
 export class DocumentsController {
   constructor(private readonly documentsService: DocumentsService) {}
 
-  @Post()
+  @Post('upload')
   @HttpCode(200)
   @ApiConsumes('multipart/form-data')
   @ApiResponse({ status: 200, type: UploadDocumentDto })
@@ -51,7 +52,7 @@ export class DocumentsController {
   }
 
   @Patch(':id')
-  @ApiResponse({ status: 200, type: ReadDocumentDto })
+  @HttpCode(200)
   update(
     @Param('id')
     id: string,
@@ -76,5 +77,18 @@ export class DocumentsController {
     id: string,
   ) {
     return this.documentsService.download(id);
+  }
+
+  @Post(':id/users/:userId/sign')
+  // @ApiResponse({ status: 200, type: ReadDocumentDto })
+  @HttpCode(200)
+  sign(
+    @Param('id')
+    id: string,
+    @Param('userId')
+    userId: string,
+    @Body() signDocumentDto: SignDocumentDto,
+  ) {
+    return this.documentsService.sign(id, userId, signDocumentDto);
   }
 }

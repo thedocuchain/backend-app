@@ -1,12 +1,16 @@
 import { UserRoles } from '../../common/enums/entities.enum';
 import { ApiProperty } from '@nestjs/swagger';
 import {
+  Contains,
+  IsArray,
   IsBoolean,
   IsNotEmpty,
+  IsNumber,
   IsOptional,
   IsString,
   IsUUID,
 } from 'class-validator';
+import { Signature } from '../../database/entities/signature.entity';
 
 export class CreateUserDto {
   @ApiProperty({
@@ -24,33 +28,36 @@ export class CreateUserDto {
   email: string;
 
   @ApiProperty({
-    example: false,
+    example: 'john.wick@gmail.com',
   })
-  @IsBoolean()
-  read_document: boolean;
+  @IsNumber()
+  @IsNotEmpty()
+  position: number;
 
   @ApiProperty({
     example: true,
   })
   @IsBoolean()
-  agreed_with_policy: boolean;
+  agreedWithPolicy: boolean;
 
   @ApiProperty({
     example: true,
   })
   @IsBoolean()
-  read_records_disclosure: boolean;
+  readRecordsDisclosure: boolean;
 
   @ApiProperty({
     example: true,
   })
   @IsBoolean()
-  first_to_hear: boolean;
+  firstToHear: boolean;
 
   @ApiProperty({
     example: UserRoles.WATCHER,
   })
   @IsNotEmpty()
+  @IsString()
+  @Contains(UserRoles.SIGNER || UserRoles.WATCHER)
   role: UserRoles;
 
   @ApiProperty({
@@ -59,4 +66,8 @@ export class CreateUserDto {
   @IsUUID()
   @IsOptional()
   documentId: string;
+
+  @IsOptional()
+  @IsArray()
+  signatures: Signature[];
 }
