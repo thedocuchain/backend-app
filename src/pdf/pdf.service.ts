@@ -74,42 +74,13 @@ export class PdfService {
     if (!textContent) {
       return pageHeight;
     }
+    
+    if( textContent.items.length === 0) {
+      return 50;
+    }
 
     return textContent.items[textContent.items.length - 1]['transform'][5];
   }
-
-  // async calculateTextCoordinates({
-  //   users,
-  //   numberOfPages,
-  //   lastContentElementY,
-  //   heightGap,
-  //   pageHeight,
-  // }: IPDFSettings): Promise<ICoords> {
-  //   const result: IUserWithCoords[] = [];
-  //   let currentPage = numberOfPages;
-  //   let currentY = lastContentElementY - 20;
-  //   let newPagesCount = 0;
-  //   users.forEach((user) => {
-  //     if (currentY < heightGap) {
-  //       currentPage += 1;
-  //       newPagesCount += 1;
-  //       currentY = pageHeight - heightGap;
-  //     } else {
-  //       currentY -= heightGap;
-  //     }
-  //
-  //     result.push({
-  //       ...user,
-  //       ycord: Math.round(currentY),
-  //       pageNumber: currentPage,
-  //     });
-  //   });
-  //
-  //   return {
-  //     result,
-  //     newPagesCount,
-  //   };
-  // }
 
   async calculateTextCoordinates({
     users,
