@@ -1,4 +1,11 @@
-import { Entity, PrimaryGeneratedColumn, Column, ManyToOne } from 'typeorm';
+import {
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  ManyToOne,
+  CreateDateColumn,
+  UpdateDateColumn,
+} from 'typeorm';
 import { User } from './user.entity';
 
 @Entity()
@@ -10,25 +17,34 @@ export class Signature {
   signed: boolean;
 
   @Column('text', { nullable: true })
-  sign_font: string;
+  signFont: string;
+
+  @Column('integer', { nullable: true })
+  fontSize: number;
 
   @Column('timestamptz', { nullable: true })
-  sign_date: Date;
+  signDate: Date;
 
   @Column('boolean', { default: false })
   notified: boolean;
 
   @Column('timestamptz', { nullable: true })
-  last_notify_date: Date;
+  lastNotifyDate: Date;
 
   @Column('integer')
-  y_coordinate: number;
+  yCoordinate: number;
 
   @Column('integer')
-  page_number: number;
+  pageNumber: number;
 
   @Column('text', { nullable: true })
-  check_sum: string;
+  checkSum: string;
+
+  @CreateDateColumn()
+  createdAt: Date;
+
+  @UpdateDateColumn()
+  updatedAt: Date;
 
   @ManyToOne(() => User, (user) => user.signatures)
   user: User;

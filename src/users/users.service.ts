@@ -25,6 +25,23 @@ export class UsersService {
     if (!user) {
       throw new BadRequestException('User is not found.');
     }
-    return this.userRepository.save({ ...user, ...updateUserDto });
+
+    await this.userRepository.save({ ...user, ...updateUserDto });
+    return this.findOne(id);
+  }
+
+  public async findOne(id: string): Promise<User> {
+    const user = await this.userRepository
+      .createQueryBuilder('user')
+      .leftJoinAndSelect('user.document', 'document')
+      .leftJoinAndSelect('user.signatures', 'signature')
+      .where('user.id = :id', { id })
+      .getOne();
+
+    if (!user) {
+      throw new BadRequestException('User is not found.');
+    }
+
+    return user;
   }
 }

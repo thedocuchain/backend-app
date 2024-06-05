@@ -23,32 +23,34 @@ export class User {
   email: string;
 
   @Column('boolean', { default: false })
-  read_document: boolean;
+  agreedWithPolicy: boolean;
 
   @Column('boolean', { default: false })
-  agreed_with_policy: boolean;
+  readRecordsDisclosure: boolean;
 
   @Column('boolean', { default: false })
-  read_records_disclosure: boolean;
-
-  @Column('boolean', { default: false })
-  first_to_hear: boolean;
+  firstToHear: boolean;
 
   @Column('text', { nullable: true })
-  check_sum: string;
+  checkSum: string;
 
   @CreateDateColumn()
-  created_at: Date;
+  createdAt: Date;
 
   @UpdateDateColumn()
-  updated_at: Date;
+  updatedAt: Date;
 
   @Column({
-    type: 'enum',
-    enum: UserRoles,
+    type: 'text',
     default: UserRoles.WATCHER,
   })
-  role: UserRoles;
+  role: string;
+
+  @Column({
+    type: 'integer',
+    default: 0,
+  })
+  position: number;
 
   @ManyToOne(() => Document, (document) => document.users)
   document: Document;

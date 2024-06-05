@@ -24,6 +24,7 @@ export class FileStorageService {
     media: Buffer,
     metadata: { [key: string]: string }[],
   ) {
+    await this.checkAndConfigureBucketCors();
     const object = metadata.reduce((obj, item) => Object.assign(obj, item), {});
     const file = this.storage.bucket(this.bucket).file(path);
     const stream = file.createWriteStream();
@@ -64,7 +65,10 @@ export class FileStorageService {
     return storageFile;
   }
 
-  async getSignedUrl(path: string): Promise<string> {
+  async getSignedUrl(path: string, isDownload = false): Promise<string> {
+    const responseType = isDownload
+      ? 'application/octet-stream'
+      : 'application/pdf';
     const [signedUrl] = await this.storage
       .bucket(this.bucket)
       .file(path)
@@ -72,7 +76,7 @@ export class FileStorageService {
         action: 'read',
         expires: Date.now() + 24 * 1000 * 60 * 60,
         version: 'v4',
-        responseType: 'application/pdf',
+        responseType,
         responseDisposition: 'inline',
       });
 
@@ -90,5 +94,28 @@ export class FileStorageService {
       ([key, value]) => ({ [key]: value }),
     );
     await this.save(path, newMedia, metadataArray);
+  }
+
+  async configureBucketCors() {
+    await this.storage.bucket(this.bucket).setCorsConfiguration([
+      {
+        origin: ['*'],
+        method: ['*'],
+        maxAgeSeconds: 3600,
+        responseHeader: ['*'],
+      },
+    ]);
+  }
+
+  async getBucketCors() {
+    const [metadata] = await this.storage.bucket(this.bucket).getMetadata();
+    return metadata.cors || [];
+  }
+
+  async checkAndConfigureBucketCors() {
+    const corsConfiguration = await this.getBucketCors();
+    if (corsConfiguration.length === 0) {
+      await this.configureBucketCors();
+    }
   }
 }
