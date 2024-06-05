@@ -1,0 +1,28 @@
+---
+- name: Deploy DocuChain backend
+  gather_facts: true
+  hosts: localhost
+  become: yes
+
+  tasks:
+
+    - name: Generate dotenv and copy to base dir
+      template:
+        src: "templates/.env-compose.j2"
+        dest: "/opt/app/backend/.env-compose"
+
+    - name: Copy compose to base dir
+      copy:
+        src: "../docker-compose.prod.yml"
+        dest: "/opt/app/backend/docker-compose.prod.yml"
+
+    - name: Deploy docker-compose
+      community.docker.docker_compose_v2:
+        project_src: "/opt/app/backend"
+        build: always
+        recreate: always
+        remove_orphans: true
+        env_files: 
+          - "/opt/app/backend/.env-compose"
+        files:
+          - "{{ docuchain_backend.compose_filename | default('/opt/app/backend/docker-compose.prod.yml') }}"

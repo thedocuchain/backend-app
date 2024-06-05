@@ -21,4 +21,5 @@ export interface ICoords {
 export interface IDocumentWithInitials {
   file: Buffer;
   usersWithCoords: IUserWithCoords[];
+  pagesCount: number;
 }

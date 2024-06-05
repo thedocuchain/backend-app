@@ -19,14 +19,21 @@ export class CreateSignatureDto {
   })
   @IsOptional()
   @IsString()
-  sign_font?: string;
+  signFont?: string;
+
+  @ApiProperty({
+    example: 20,
+  })
+  @IsOptional()
+  @IsNumber()
+  fontSize?: number;
 
   @ApiProperty({
     example: '2024-06-01T14:05:04.043Z',
   })
   @IsOptional()
   @IsDate()
-  sign_date?: Date;
+  signDate?: Date;
 
   @ApiProperty({
     example: true,
@@ -39,19 +46,19 @@ export class CreateSignatureDto {
   })
   @IsOptional()
   @IsDate()
-  last_notify_date?: Date;
+  lastNotifyDate?: Date;
 
   @ApiProperty({
     example: 420,
   })
   @IsNumber()
-  y_coordinate: number;
+  yCoordinate: number;
 
   @ApiProperty({
     example: 2,
   })
   @IsNumber()
-  page_number: number;
+  pageNumber: number;
 
   @IsOptional()
   @IsString()

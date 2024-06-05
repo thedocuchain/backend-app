@@ -12,9 +12,11 @@ import { ConfigService } from '@nestjs/config';
 import { UsersService } from '../users/users.service';
 import { UpdateDocumentDto } from './dto/update-document.dto';
 import { PdfService } from '../pdf/pdf.service';
-import { UserRoles } from '../common/enums/entities.enum';
+import { DocumentStatuses, UserRoles } from '../common/enums/entities.enum';
 import { SignaturesService } from '../signatures/signatures.service';
 import { IDocumentWithInitials } from '../pdf/interfaces/pdf.interface';
+import { SignDocumentDto } from './dto/sign-document.dto';
+import { ReadDocumentDto } from './dto/read-document.dto';
 
 @Injectable()
 export class DocumentsService {
@@ -42,8 +44,9 @@ export class DocumentsService {
     const document = this.documentRepository.create({
       name: fileName,
       type: fileType,
-      file_storage_id: filePath,
-      check_sum: hash(`${fileName}${fileType}${filePath}`),
+      fileStorageId: filePath,
+      status: DocumentStatuses.UPLOADED,
+      checkSum: hash(`${fileName}${fileType}${filePath}`),
     });
 
     const newDoc = await this.documentRepository.save(document);
@@ -54,14 +57,14 @@ export class DocumentsService {
     const clientUrl = this.configService.get('CLIENT_APP_REDIRECT_URL');
 
     return {
-      redirectUrl: `${clientUrl}/documents/${newDoc.id}`,
+      redirectUrl: `${clientUrl}/doc/${newDoc.id}`,
     };
   }
 
   public async update(
     id: string,
     updateDocumentDto: UpdateDocumentDto,
-  ): Promise<Document> {
+  ): Promise<void> {
     const documentName = updateDocumentDto.name;
     const users = updateDocumentDto?.users;
     const document = await this.documentRepository
@@ -93,14 +96,17 @@ export class DocumentsService {
       await Promise.all(usersPromises);
     }
 
-    await this.documentRepository.update({ id }, { name: documentName });
+    await this.documentRepository.update(
+      { id },
+      { name: documentName, status: DocumentStatuses.RECIPIENT_ADDED },
+    );
 
     const updatedDocument = await this.findOne(id);
 
-    return await this.setInitials(updatedDocument);
+    await this.setInitials(updatedDocument);
   }
 
-  public async findOne(id: string): Promise<Document> {
+  public async findOne(id: string): Promise<ReadDocumentDto> {
     const document = await this.documentRepository
       .createQueryBuilder('document')
       .leftJoinAndSelect('document.users', 'user')
@@ -112,10 +118,18 @@ export class DocumentsService {
       throw new BadRequestException('Document is not found.');
     }
 
-    return document;
+    const downloadLink = await this.fileStorageService.getSignedUrl(
+      document.fileStorageId,
+    );
+
+    return {
+      ...document,
+      downloadLink,
+    };
   }
 
   public async download(id: string): Promise<DownloadDocumentDto> {
+    const isDownload = true;
     const document = await this.documentRepository.findOneBy({ id });
     if (!document) {
       throw new BadRequestException('Document is not found.');
@@ -123,7 +137,8 @@ export class DocumentsService {
 
     return {
       fileLink: await this.fileStorageService.getSignedUrl(
-        document.file_storage_id,
+        document.fileStorageId,
+        isDownload,
       ),
     };
   }
@@ -134,7 +149,7 @@ export class DocumentsService {
     );
 
     const documentFile = await this.fileStorageService.getWithMetaData(
-      document.file_storage_id,
+      document.fileStorageId,
     );
     const documentWithInitials: IDocumentWithInitials =
       await this.pdfService.createInitials(documentFile.buffer, signers);
@@ -144,8 +159,8 @@ export class DocumentsService {
     if (signers.length > 0) {
       const signaturesPromises = usersWithCoords.map(async (userWithCoords) => {
         const signature = {
-          page_number: userWithCoords.pageNumber,
-          y_coordinate: userWithCoords.ycord,
+          pageNumber: userWithCoords.pageNumber,
+          yCoordinate: userWithCoords.ycord,
           signed: false,
           notified: false,
         };
@@ -156,12 +171,89 @@ export class DocumentsService {
       await Promise.all(signaturesPromises);
     }
 
+    await this.documentRepository.update(
+      { id: document.id },
+      { pagesCount: documentWithInitials.pagesCount },
+    );
+
     await this.fileStorageService.replaceFile(
-      document.file_storage_id,
+      document.fileStorageId,
       documentWithInitials.file,
       documentFile.metadata,
     );
 
-    return document;
+    return this.findOne(document.id);
+  }
+
+  public async sign(
+    id: string,
+    userId: string,
+    signature: SignDocumentDto,
+  ): Promise<void> {
+    const document = await this.findOne(id);
+    const user = document.users.find((user) => user.id === userId);
+
+    if (!user) {
+      throw new BadRequestException('User is not found.');
+    }
+
+    if (user.role !== UserRoles.SIGNER) {
+      throw new BadRequestException(
+        'You are not allowed to sign this document.',
+      );
+    }
+
+    if (user.signatures[0].signed) {
+      throw new BadRequestException('User already signed');
+    }
+
+    const signatureId = user.signatures[0].id;
+
+    await this.signaturesService.update(signatureId, {
+      signed: signature.signed,
+      signFont: signature.signFont,
+      signDate: signature.signDate,
+      notified: true,
+      lastNotifyDate: signature.signDate,
+      fontSize: signature.fontSize,
+    });
+
+    const updatedUser = await this.usersService.update(userId, {
+      agreedWithPolicy: signature.agreedWithPolicy,
+      readRecordsDisclosure: signature.readRecordsDisclosure,
+    });
+
+    const documentFileWithMetadata =
+      await this.fileStorageService.getWithMetaData(document.fileStorageId);
+
+    const signedDocument = await this.pdfService.createSignature(
+      documentFileWithMetadata.buffer,
+      updatedUser,
+    );
+
+    await this.fileStorageService.replaceFile(
+      document.fileStorageId,
+      signedDocument,
+      documentFileWithMetadata.metadata,
+    );
+
+    const signersCount = document.users.filter(
+      (user) => user.role === UserRoles.SIGNER,
+    ).length;
+
+    if (document.signedBy === signersCount - 1) {
+      await this.documentRepository.update(
+        { id },
+        { status: DocumentStatuses.SIGNED, signedBy: document.signedBy + 1 },
+      );
+    } else {
+      await this.documentRepository.update(
+        { id },
+        {
+          status: DocumentStatuses.PARTIALLY_SIGNED,
+          signedBy: document.signedBy + 1,
+        },
+      );
+    }
   }
 }
