@@ -4,13 +4,13 @@ export enum DocumentStatuses {
   RECIPIENT_ADDED = 'recipient added',
   SENT = 'sent',
   DELIVERED = 'delivered',
+  PARTIALLY_SIGNED = 'partially signed',
   SIGNED = 'signed',
   COMPLETED = 'completed',
   BLOCKCHAINED = 'blockchained',
 }
 
 export enum UserRoles {
-  CREATOR = 'Creator',
-  SIGNER = 'Signer',
-  WATCHER = 'Watcher',
+  SIGNER = 'signer',
+  WATCHER = 'watcher',
 }
