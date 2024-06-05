@@ -7,7 +7,7 @@ import {
 } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 import { DocumentStatuses } from '../../common/enums/entities.enum';
-import { ReadUserDto } from '../../users/dto/read-user.dto';
+import { User } from '../../database/entities/user.entity';
 
 export class ReadDocumentDto {
   @ApiProperty({
@@ -32,7 +32,7 @@ export class ReadDocumentDto {
     example: DocumentStatuses.DRAFT,
   })
   @IsString()
-  status: DocumentStatuses;
+  status: string;
 
   @ApiProperty({
     example: '91f775524508900f300ffff6872bb5f806398440',
@@ -44,37 +44,50 @@ export class ReadDocumentDto {
     example: '91f775524508900f300ffff6872bb5f806398440',
   })
   @IsString()
-  blockchain_transaction: string;
+  blockchainTransaction: string;
 
   @ApiProperty({
     example: 'fc027ff1-5e94-4933-9875-78d1b8a9676f',
   })
   @IsString()
-  file_storage_id: string;
+  fileStorageId: string;
 
   @ApiProperty({
     example: 3,
   })
   @IsInt()
-  signed_by: number;
+  signedBy: number;
 
-  check_sum: string;
+  @ApiProperty({
+    example: 3,
+  })
+  @IsInt()
+  pagesCount: number;
+
+  checkSum: string;
 
   @ApiProperty({
     example: '2021-01-20T12:00:00.000Z',
   })
   @IsDateString()
-  created_at: Date;
+  createdAt: Date;
 
   @ApiProperty({
     example: '2021-01-20T12:00:00.000Z',
   })
   @IsDateString()
-  updated_at: Date;
+  updatedAt: Date;
 
   @ApiProperty({
     example: [],
   })
   @IsArray()
-  users: ReadUserDto[];
+  users: User[];
+
+  @ApiProperty({
+    description: 'link to file',
+    example: 'https://storage.googleapis.com',
+  })
+  @IsString()
+  downloadLink: string;
 }
