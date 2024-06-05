@@ -21,32 +21,34 @@ export class Document {
   type: string;
 
   @Column({
-    type: 'enum',
-    enum: DocumentStatuses,
+    type: 'text',
     default: DocumentStatuses.DRAFT,
   })
-  status: DocumentStatuses;
+  status: string;
 
   @Column('text', { nullable: true })
   hash: string;
 
   @Column('text', { nullable: true })
-  blockchain_transaction: string;
+  blockchainTransaction: string;
 
   @Column('text')
-  file_storage_id: string;
+  fileStorageId: string;
 
-  @Column('int', { default: 0 })
-  signed_by: number;
+  @Column('integer', { default: 0 })
+  signedBy: number;
+
+  @Column('integer', { default: 0 })
+  pagesCount: number;
 
   @Column('text', { nullable: true })
-  check_sum: string;
+  checkSum: string;
 
   @CreateDateColumn()
-  created_at: Date;
+  createdAt: Date;
 
   @UpdateDateColumn()
-  updated_at: Date;
+  updatedAt: Date;
 
   @OneToMany(() => User, (user) => user.document, {
     cascade: true,

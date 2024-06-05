@@ -1,6 +1,7 @@
 import { CreateUserDto } from './create-user.dto';
 import { ApiProperty } from '@nestjs/swagger';
 import { IsUUID } from 'class-validator';
+import { Signature } from '../../database/entities/signature.entity';
 
 export class ReadUserDto extends CreateUserDto {
   @ApiProperty({
@@ -11,5 +12,5 @@ export class ReadUserDto extends CreateUserDto {
   @ApiProperty({
     example: [],
   })
-  signatures: object[];
+  signatures: Signature[];
 }
