@@ -1,0 +1,22 @@
+version: '3.8'
+services:
+  db:
+    image: postgres:14
+    restart: always
+    environment:
+      - POSTGRES_USER=${DATABASE_USER}
+      - POSTGRES_PASSWORD=${DATABASE_PASSWORD}
+      - POSTGRES_DB=${DATABASE_NAME}
+    volumes:
+      - db:/var/lib/postgresql/data
+  backend-app:
+    container_name: backend-app
+    image: docuchain-backend:latest
+    env_file:
+      - .env-compose
+    ports:
+      - "3001:3001"
+    depends_on:
+      - db
+volumes:
+  db:

@@ -1,0 +1,32 @@
+name: Build and deploy Docuchain backend
+
+on:
+  push:
+    branches: [ "main", "cicd" ]
+
+jobs:
+
+  deploy:
+
+    runs-on: [ "self-hosted", "prod" ]
+
+    steps:
+    - uses: actions/checkout@v3
+      with:
+        persist-credentials: false
+        
+    - name: Build docker image
+      run: make build-prod
+
+    - name: Start application
+      run: source /home/deployer/ansible/bin/activate && cd ansible && ansible-playbook deploy-backend.yml -e ansible_user=deployer -b -v
+      env:
+        DATABASE_PASSWORD: ${{ secrets.DATABASE_PASSWORD }}
+        GCS_PROJECT_ID: ${{ secrets.GCS_PROJECT_ID }}
+        GCS_PRIVATE_KEY_ID: ${{ secrets.GCS_PRIVATE_KEY_ID }}
+        GCS_PRIVATE_KEY: ${{ secrets.GCS_PRIVATE_KEY }}
+        GCS_CLIENT_EMAIL: ${{ secrets.GCS_CLIENT_EMAIL}}
+        GCS_CLIENT_ID: ${{ secrets.GCS_CLIENT_ID }}
+        GOOGLE_SECRET: ${{ secrets.GOOGLE_SECRET }}
+        GCS_CLIENT_X509_CERT_URL: ${{ secrets.GCS_CLIENT_X509_CERT_URL }}
+        GCS_BUCKET_NAME: ${{ secrets.GCS_BUCKET_NAME }}
