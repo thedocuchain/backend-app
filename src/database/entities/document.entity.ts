@@ -35,6 +35,12 @@ export class Document {
   @Column('text')
   fileStorageId: string;
 
+  @Column('text', { nullable: true })
+  shortId: string;
+
+  @Column('text', { nullable: true })
+  imageStorageId: string;
+
   @Column('integer', { default: 0 })
   signedBy: number;
 

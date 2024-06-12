@@ -8,10 +8,10 @@ module.exports =  {
     "synchronize": false,
     "logging": false,
     "entities": [
-        "dist/**/entities/*.entity.{ts,js}"
+        "dist/src/database/entities/*.entity.{ts,js}"
     ],
     "migrations": [
-        "dist/**/migrations/**/*.{js,ts}"
+        "dist/src/database/migrations/**/*.{js,ts}"
     ],
 
     "cli": {

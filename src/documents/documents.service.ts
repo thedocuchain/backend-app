@@ -1,22 +1,33 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
+import { ConfigService } from '@nestjs/config';
 import { Repository } from 'typeorm';
+import { hash } from 'typeorm/util/StringUtils';
+import { v4 as uuidV4 } from 'uuid';
+import * as crypto from 'crypto';
+import * as stream from 'node:stream';
+import * as base32 from 'hi-base32';
+
 import { Document } from '../database/entities/document.entity';
 import { FileStorageService } from '../file-storage/file-storage.service';
+import { PdfService } from '../pdf/pdf.service';
+import { SignaturesService } from '../signatures/signatures.service';
+import { NotificationsService } from '../notifications/notifications.service';
 
-import { v4 as uuidV4 } from 'uuid';
-import { hash } from 'typeorm/util/StringUtils';
 import { UploadDocumentDto } from './dto/upload-document.dto';
 import { DownloadDocumentDto } from './dto/download-document.dto';
-import { ConfigService } from '@nestjs/config';
 import { UsersService } from '../users/users.service';
 import { UpdateDocumentDto } from './dto/update-document.dto';
-import { PdfService } from '../pdf/pdf.service';
-import { DocumentStatuses, UserRoles } from '../common/enums/entities.enum';
-import { SignaturesService } from '../signatures/signatures.service';
-import { IDocumentWithInitials } from '../pdf/interfaces/pdf.interface';
 import { SignDocumentDto } from './dto/sign-document.dto';
 import { ReadDocumentDto } from './dto/read-document.dto';
+import {
+  DocumentStatuses,
+  FileLinkTypes,
+  NotifyStatuses,
+  UserRoles,
+} from '../common/enums/entities.enum';
+import { IDocumentWithInitials } from '../pdf/interfaces/pdf.interface';
+import { FindDocumentDto } from './dto/find-document.dto';
 
 @Injectable()
 export class DocumentsService {
@@ -28,23 +39,32 @@ export class DocumentsService {
     private readonly configService: ConfigService,
     private readonly pdfService: PdfService,
     private readonly signaturesService: SignaturesService,
+    private readonly notificationsService: NotificationsService,
   ) {}
   public async create(file: Express.Multer.File): Promise<UploadDocumentDto> {
     if (!file) {
       throw new BadRequestException('File is required.');
     }
     const filePath = uuidV4();
+    const imagePath = `${filePath}.png`;
     const fileName = file?.originalname ?? filePath;
     const fileType = file?.mimetype ?? 'application/pdf';
+    const imageType = 'image/png';
 
     await this.fileStorageService.save(filePath, file.buffer, [
       { filePath, contentType: file.mimetype },
+    ]);
+
+    const imageBuffer = await this.pdfService.convertPdfToPng(file.buffer);
+    await this.fileStorageService.save(imagePath, imageBuffer, [
+      { filePath: imagePath, contentType: imageType },
     ]);
 
     const document = this.documentRepository.create({
       name: fileName,
       type: fileType,
       fileStorageId: filePath,
+      imageStorageId: imagePath,
       status: DocumentStatuses.UPLOADED,
       checkSum: hash(`${fileName}${fileType}${filePath}`),
     });
@@ -54,6 +74,10 @@ export class DocumentsService {
     if (!newDoc || !newDoc?.id) {
       throw new BadRequestException('Document is not created.');
     }
+    const shortDocumentId = await this.generateShortDocumentId(newDoc.id);
+    await this.documentRepository.update(newDoc.id, {
+      shortId: shortDocumentId,
+    });
     const clientUrl = this.configService.get('CLIENT_APP_REDIRECT_URL');
 
     return {
@@ -118,18 +142,58 @@ export class DocumentsService {
       throw new BadRequestException('Document is not found.');
     }
 
+    const isEmailsDeliveredToAllUsers = document.users.every(
+      (user) => user.notifyStatus === NotifyStatuses.DELIVERED,
+    );
+
+    if (
+      document.status === DocumentStatuses.SENT &&
+      isEmailsDeliveredToAllUsers
+    ) {
+      await this.documentRepository.update(document.id, {
+        status: DocumentStatuses.DELIVERED,
+      });
+    }
+
     const downloadLink = await this.fileStorageService.getSignedUrl(
       document.fileStorageId,
+      FileLinkTypes.PDF,
+    );
+
+    const imageLink = await this.fileStorageService.getSignedUrl(
+      document.imageStorageId,
+      FileLinkTypes.IMAGE,
     );
 
     return {
       ...document,
       downloadLink,
+      imageLink,
+    };
+  }
+
+  public async checkStatus(
+    findDocumentDto: FindDocumentDto,
+  ): Promise<UploadDocumentDto> {
+    const document = await this.documentRepository
+      .createQueryBuilder('document')
+      .where('document.shortId = :shortId', {
+        shortId: findDocumentDto.shortId,
+      })
+      .getOne();
+
+    if (!document) {
+      throw new BadRequestException('Document is not found.');
+    }
+
+    return {
+      redirectUrl: `${this.configService.get(
+        'CLIENT_APP_REDIRECT_URL',
+      )}/doc/${document.id}`,
     };
   }
 
   public async download(id: string): Promise<DownloadDocumentDto> {
-    const isDownload = true;
     const document = await this.documentRepository.findOneBy({ id });
     if (!document) {
       throw new BadRequestException('Document is not found.');
@@ -138,7 +202,7 @@ export class DocumentsService {
     return {
       fileLink: await this.fileStorageService.getSignedUrl(
         document.fileStorageId,
-        isDownload,
+        FileLinkTypes.DOWNLOAD,
       ),
     };
   }
@@ -242,9 +306,14 @@ export class DocumentsService {
     ).length;
 
     if (document.signedBy === signersCount - 1) {
+      const documentHash = await this.getFileHash(signedDocument);
       await this.documentRepository.update(
         { id },
-        { status: DocumentStatuses.SIGNED, signedBy: document.signedBy + 1 },
+        {
+          status: DocumentStatuses.COMPLETED,
+          signedBy: document.signedBy + 1,
+          hash: documentHash,
+        },
       );
     } else {
       await this.documentRepository.update(
@@ -255,5 +324,60 @@ export class DocumentsService {
         },
       );
     }
+
+    const updatedDocument = await this.findOne(document.id);
+
+    await this.notificationsService.sendEmail(
+      updatedDocument,
+      document.imageStorageId,
+    );
+  }
+
+  async notify(id: string, userId?): Promise<void> {
+    const document = await this.findOne(id);
+    if (!document) {
+      throw new BadRequestException('Document is not found.');
+    }
+
+    const imageLink = await this.fileStorageService.getSignedUrl(
+      document.imageStorageId,
+      FileLinkTypes.IMAGE,
+    );
+
+    if (userId) {
+      const user = await this.usersService.findOne(userId);
+      if (!user) {
+        throw new BadRequestException('User is not found.');
+      }
+      await this.notificationsService.sendEmail(document, imageLink, user);
+    } else {
+      await this.notificationsService.sendEmail(document, imageLink);
+
+      if (document.status === DocumentStatuses.RECIPIENT_ADDED) {
+        await this.documentRepository.update(
+          { id },
+          { status: DocumentStatuses.SENT },
+        );
+      }
+    }
+  }
+
+  async getFileHash(fileBuffer: Buffer): Promise<string> {
+    return new Promise((resolve, reject) => {
+      const hash = crypto.createHash('sha256');
+
+      const inputStream = stream.Readable.from(fileBuffer);
+      inputStream.on('data', (data) => hash.update(data));
+      inputStream.on('end', () => resolve(hash.digest('hex')));
+      inputStream.on('error', (err) => reject(err));
+    });
+  }
+
+  async generateShortDocumentId(id: string): Promise<string> {
+    const buffer = Buffer.from(id.replace(/-/g, ''), 'hex');
+    const base32Encoded = base32.encode(buffer).replace(/=/g, '');
+    const shortId = base32Encoded.slice(0, 12).toLowerCase();
+
+    return `${shortId.slice(0, 3)}-${shortId.slice(3, 7)}-${shortId.slice(7, 10)}`;
   }
 }

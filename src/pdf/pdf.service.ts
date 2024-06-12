@@ -1,8 +1,8 @@
+import '@ungap/with-resolvers';
+import * as fontkit from '@pdf-lib/fontkit';
 import { Injectable } from '@nestjs/common';
 import { degrees, PDFDocument, rgb } from 'pdf-lib';
-import * as pdfjsLib from 'pdfjs-dist';
 import { format } from 'date-fns';
-import * as fontkit from '@pdf-lib/fontkit';
 import {
   ICoords,
   IDocumentWithInitials,
@@ -11,6 +11,7 @@ import {
 } from './interfaces/pdf.interface';
 import { User } from '../database/entities/user.entity';
 import { FontUrls } from '../common/enums/fonts.enum';
+import { pdfToPng } from 'pdf-to-png-converter';
 
 @Injectable()
 export class PdfService {
@@ -66,6 +67,7 @@ export class PdfService {
     pageHeight: number,
   ): Promise<number> {
     const data = await pdfDoc.save();
+    const pdfjsLib = await import('pdfjs-dist/build/pdf.mjs');
     const doc = await pdfjsLib.getDocument({ data }).promise;
     const page = await doc.getPage(doc.numPages);
 
@@ -74,8 +76,8 @@ export class PdfService {
     if (!textContent) {
       return pageHeight;
     }
-    
-    if( textContent.items.length === 0) {
+
+    if (textContent.items.length === 0) {
       return 50;
     }
 
@@ -254,14 +256,14 @@ export class PdfService {
           y: yCord,
           size: signatureFontSize,
           font: customFont,
-          color: rgb(0, 0, 1),
+          color: rgb(0, 0, 0),
         });
         pdfDoc.getPages()[page - 1].drawText(surname, {
           x: signatureFormX,
           y: yCord - signatureFontSize - 5,
           size: signatureFontSize,
           font: customFont,
-          color: rgb(0, 0, 1),
+          color: rgb(0, 0, 0),
         });
       }
     } else {
@@ -270,7 +272,7 @@ export class PdfService {
         y: yCord,
         size: signatureFontSize,
         font: customFont,
-        color: rgb(0, 0, 1),
+        color: rgb(0, 0, 0),
       });
     }
     pdfDoc.getPages()[page - 1].drawText(`${signatureDate}`, {
@@ -282,5 +284,15 @@ export class PdfService {
     });
 
     return pdfDoc;
+  }
+
+  async convertPdfToPng(pdfBuffer: Buffer): Promise<any> {
+    const pngPage = await pdfToPng(pdfBuffer, {
+      useSystemFonts: false,
+      pagesToProcess: [1],
+      viewportScale: 1,
+    });
+
+    return pngPage[0].content;
   }
 }
