@@ -41,6 +41,18 @@ export class CreateUserDto {
   agreedWithPolicy: boolean;
 
   @ApiProperty({
+    example: 'sent',
+  })
+  @IsString()
+  notifyStatus: string;
+
+  @ApiProperty({
+    example: '2021-01-20T12:00:00.000Z',
+  })
+  @IsString()
+  lastNotifyDate: Date;
+
+  @ApiProperty({
     example: true,
   })
   @IsBoolean()
@@ -65,7 +77,7 @@ export class CreateUserDto {
   })
   @IsUUID()
   @IsOptional()
-  documentId: string;
+  documentId?: string;
 
   @IsOptional()
   @IsArray()

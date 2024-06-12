@@ -1,6 +1,7 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { IsArray, IsNotEmpty, IsString, ValidateNested } from 'class-validator';
 import { ReadUserDto } from '../../users/dto/read-user.dto';
+import { DocumentStatuses } from '../../common/enums/entities.enum';
 
 export class UpdateDocumentDto {
   @ApiProperty({
@@ -29,4 +30,7 @@ export class UpdateDocumentDto {
   @IsArray()
   @ValidateNested()
   readonly users: ReadUserDto[];
+
+  @IsString()
+  readonly status: DocumentStatuses;
 }

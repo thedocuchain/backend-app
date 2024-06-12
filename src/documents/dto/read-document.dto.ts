@@ -53,6 +53,18 @@ export class ReadDocumentDto {
   fileStorageId: string;
 
   @ApiProperty({
+    example: 'fc027ff1-5e94-4933-9875-78d1b8a9676f',
+  })
+  @IsString()
+  imageStorageId: string;
+
+  @ApiProperty({
+    example: 'abc-rate-wrd',
+  })
+  @IsString()
+  shortId: string;
+
+  @ApiProperty({
     example: 3,
   })
   @IsInt()
@@ -90,4 +102,11 @@ export class ReadDocumentDto {
   })
   @IsString()
   downloadLink: string;
+
+  @ApiProperty({
+    description: 'link to preview image',
+    example: 'https://storage.googleapis.com',
+  })
+  @IsString()
+  imageLink: string;
 }

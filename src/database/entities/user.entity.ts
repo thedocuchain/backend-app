@@ -9,7 +9,7 @@ import {
 } from 'typeorm';
 import { Document } from './document.entity';
 import { Signature } from './signature.entity';
-import { UserRoles } from '../../common/enums/entities.enum';
+import { NotifyStatuses, UserRoles } from '../../common/enums/entities.enum';
 
 @Entity()
 export class User {
@@ -51,6 +51,12 @@ export class User {
     default: 0,
   })
   position: number;
+
+  @Column('text', { default: NotifyStatuses.NOT_SENT })
+  notifyStatus: string;
+
+  @Column('timestamptz', { nullable: true })
+  lastNotifyDate: Date;
 
   @ManyToOne(() => Document, (document) => document.users)
   document: Document;
