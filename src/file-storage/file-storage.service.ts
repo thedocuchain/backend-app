@@ -1,9 +1,10 @@
 import { Injectable } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { DownloadResponse, Storage } from '@google-cloud/storage';
 
-import { ConfigService } from '@nestjs/config';
 import { getGCStorageConfig } from '../configs/gcstorage.config';
 import { FileStorage } from './entities/file-storage.entity';
+import { FileLinkTypes } from '../common/enums/entities.enum';
 
 @Injectable()
 export class FileStorageService {
@@ -65,16 +66,24 @@ export class FileStorageService {
     return storageFile;
   }
 
-  async getSignedUrl(path: string, isDownload = false): Promise<string> {
-    const responseType = isDownload
-      ? 'application/octet-stream'
-      : 'application/pdf';
+  async getSignedUrl(path: string, linkType: FileLinkTypes): Promise<string> {
+    let expires = Date.now() + 24 * 1000 * 60 * 60;
+    let responseType = 'application/pdf';
+    if (linkType === FileLinkTypes.IMAGE) {
+      expires = Date.now() + 7 * 24 * 1000 * 60 * 60;
+      responseType = 'image/png';
+    }
+
+    if (linkType === FileLinkTypes.DOWNLOAD) {
+      responseType = 'application/octet-stream';
+    }
+
     const [signedUrl] = await this.storage
       .bucket(this.bucket)
       .file(path)
       .getSignedUrl({
         action: 'read',
-        expires: Date.now() + 24 * 1000 * 60 * 60,
+        expires,
         version: 'v4',
         responseType,
         responseDisposition: 'inline',

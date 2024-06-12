@@ -25,12 +25,6 @@ export class Signature {
   @Column('timestamptz', { nullable: true })
   signDate: Date;
 
-  @Column('boolean', { default: false })
-  notified: boolean;
-
-  @Column('timestamptz', { nullable: true })
-  lastNotifyDate: Date;
-
   @Column('integer')
   yCoordinate: number;
 

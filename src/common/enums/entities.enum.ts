@@ -14,3 +14,14 @@ export enum UserRoles {
   SIGNER = 'signer',
   WATCHER = 'watcher',
 }
+
+export enum NotifyStatuses {
+  NOT_SENT = 'not sent',
+  DELIVERED = 'delivered',
+}
+
+export enum FileLinkTypes {
+  IMAGE = 'image',
+  DOWNLOAD = 'download',
+  PDF = 'pdf',
+}
