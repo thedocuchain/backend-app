@@ -7,6 +7,7 @@ import { DocumentsModule } from './documents/documents.module';
 import { UsersModule } from './users/users.module';
 import { PdfModule } from './pdf/pdf.module';
 import { SignaturesModule } from './signatures/signatures.module';
+import { NotificationsModule } from './notifications/notifications.module';
 
 @Module({
   imports: [
@@ -21,6 +22,7 @@ import { SignaturesModule } from './signatures/signatures.module';
     UsersModule,
     PdfModule,
     SignaturesModule,
+    NotificationsModule,
   ],
   providers: [],
 })

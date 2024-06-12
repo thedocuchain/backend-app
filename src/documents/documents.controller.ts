@@ -9,14 +9,17 @@ import {
   Patch,
   Body,
 } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
 import { ApiBody, ApiConsumes, ApiResponse, ApiTags } from '@nestjs/swagger';
+
 import { DocumentsService } from './documents.service';
+
+import { DownloadDocumentDto } from './dto/download-document.dto';
 import { UploadDocumentDto } from './dto/upload-document.dto';
 import { ReadDocumentDto } from './dto/read-document.dto';
-import { DownloadDocumentDto } from './dto/download-document.dto';
-import { FileInterceptor } from '@nestjs/platform-express';
 import { UpdateDocumentDto } from './dto/update-document.dto';
 import { SignDocumentDto } from './dto/sign-document.dto';
+import { FindDocumentDto } from './dto/find-document.dto';
 
 @ApiTags('documents')
 @Controller('documents')
@@ -51,6 +54,14 @@ export class DocumentsController {
     return this.documentsService.create(file);
   }
 
+  @Post('status')
+  @ApiResponse({ status: 200, type: UploadDocumentDto })
+  checkStatus(
+    @Body() findDocumentDto: FindDocumentDto,
+  ): Promise<UploadDocumentDto> {
+    return this.documentsService.checkStatus(findDocumentDto);
+  }
+
   @Patch(':id')
   @HttpCode(200)
   update(
@@ -79,8 +90,27 @@ export class DocumentsController {
     return this.documentsService.download(id);
   }
 
+  @Post(':id/notify')
+  @HttpCode(200)
+  notifyUsers(
+    @Param('id')
+    id: string,
+  ) {
+    return this.documentsService.notify(id);
+  }
+
+  @Post(':id/users/:userId/notify')
+  @HttpCode(200)
+  notifyUser(
+    @Param('id')
+    id: string,
+    @Param('userId')
+    userId: string,
+  ) {
+    return this.documentsService.notify(id, userId);
+  }
+
   @Post(':id/users/:userId/sign')
-  // @ApiResponse({ status: 200, type: ReadDocumentDto })
   @HttpCode(200)
   sign(
     @Param('id')
