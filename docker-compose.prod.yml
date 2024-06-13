@@ -11,6 +11,7 @@ services:
       - db:/var/lib/postgresql/data
   backend-app:
     container_name: backend-app
+    restart: unless-stopped
     image: docuchain-backend:latest
     env_file:
       - .env-compose
