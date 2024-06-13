@@ -50,7 +50,7 @@ export class DocumentsService {
     const imagePath = '8c9eac34-1540-4057-b340-78496ba397f5.png';
     const fileName = file?.originalname ?? filePath;
     const fileType = file?.mimetype ?? 'application/pdf';
-    const imageType = 'image/png';
+    // const imageType = 'image/png';
 
     await this.fileStorageService.save(filePath, file.buffer, [
       { filePath, contentType: file.mimetype },
