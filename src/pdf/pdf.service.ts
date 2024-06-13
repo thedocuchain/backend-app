@@ -11,7 +11,6 @@ import {
 } from './interfaces/pdf.interface';
 import { User } from '../database/entities/user.entity';
 import { FontUrls } from '../common/enums/fonts.enum';
-import { pdfToPng } from 'pdf-to-png-converter';
 
 @Injectable()
 export class PdfService {
@@ -286,13 +285,13 @@ export class PdfService {
     return pdfDoc;
   }
 
-  async convertPdfToPng(pdfBuffer: Buffer): Promise<any> {
-    const pngPage = await pdfToPng(pdfBuffer, {
-      useSystemFonts: false,
-      pagesToProcess: [1],
-      viewportScale: 1,
-    });
-
-    return pngPage[0].content;
-  }
+  // async convertPdfToPng(pdfBuffer: Buffer): Promise<any> {
+  //   const pngPage = await pdfToPng(pdfBuffer, {
+  //     useSystemFonts: false,
+  //     pagesToProcess: [1],
+  //     viewportScale: 1,
+  //   });
+  //
+  //   return pngPage[0].content;
+  // }
 }
