@@ -1,7 +1,7 @@
 FROM node:20 AS deps
 WORKDIR /usr/src/app
 COPY package*.json ./
-RUN npm ci --ignore-scripts
+RUN npm ci
 
 # DEVELOPMENT
 FROM node:20-alpine AS development
@@ -20,7 +20,6 @@ RUN npm run build && npm prune
 
 # PRODUCTION
 FROM node:20 AS production
-
 RUN set -o errexit -o nounset \
     && apt update && apt upgrade -y \
     && apt install build-essential \
