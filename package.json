@@ -44,6 +44,7 @@
     "hi-base32": "^0.5.1",
     "mailgun.js": "^10.2.1",
     "pdf-lib": "^1.17.1",
+    "pdf-to-png-converter": "^3.2.0",
     "pdfjs-dist": "^4.3.136",
     "pg": "^8.11.5",
     "reflect-metadata": "^0.2.0",
