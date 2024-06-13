@@ -46,7 +46,8 @@ export class DocumentsService {
       throw new BadRequestException('File is required.');
     }
     const filePath = uuidV4();
-    const imagePath = `${filePath}.png`;
+    // const imagePath = `${filePath}.png`;
+    const imagePath = '8c9eac34-1540-4057-b340-78496ba397f5.png';
     const fileName = file?.originalname ?? filePath;
     const fileType = file?.mimetype ?? 'application/pdf';
     const imageType = 'image/png';
@@ -55,10 +56,10 @@ export class DocumentsService {
       { filePath, contentType: file.mimetype },
     ]);
 
-    const imageBuffer = await this.pdfService.convertPdfToPng(file.buffer);
-    await this.fileStorageService.save(imagePath, imageBuffer, [
-      { filePath: imagePath, contentType: imageType },
-    ]);
+    // const imageBuffer = await this.pdfService.convertPdfToPng(file.buffer);
+    // await this.fileStorageService.save(imagePath, imageBuffer, [
+    //   { filePath: imagePath, contentType: imageType },
+    // ]);
 
     const document = this.documentRepository.create({
       name: fileName,
