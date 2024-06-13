@@ -48,7 +48,7 @@ export class DocumentsService {
     const filePath = uuidV4();
     // const imagePath = `${filePath}.png`;
     const imagePath = '8c9eac34-1540-4057-b340-78496ba397f5.png';
-    const fileName = file?.originalname ?? filePath;
+    const fileName = Buffer.from(file?.originalname, 'latin1').toString('utf8') ?? filePath;
     const fileType = file?.mimetype ?? 'application/pdf';
     // const imageType = 'image/png';
 
