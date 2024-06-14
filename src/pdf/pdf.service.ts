@@ -1,7 +1,7 @@
 import '@ungap/with-resolvers';
 import * as fontkit from '@pdf-lib/fontkit';
 import { Injectable } from '@nestjs/common';
-import { degrees, PDFDocument, rgb } from 'pdf-lib';
+import { PDFDocument, rgb } from 'pdf-lib';
 import { format } from 'date-fns';
 import {
   ICoords,
@@ -20,17 +20,13 @@ export class PdfService {
     users: User[],
   ): Promise<IDocumentWithInitials> {
     const pdfDoc = await PDFDocument.load(pdfBuffer);
-
-    pdfDoc.getPages().map((page) => page.setRotation(degrees(0)));
-
     const numberOfPages = pdfDoc.getPages().length;
     const pageSize = pdfDoc.getPages()[numberOfPages - 1].getSize();
     const heightGap = 70;
     const pageHeight = pageSize.height;
-    const lastContentElementY = await this.findLowestLine(
-      pdfDoc,
-      pageSize.height,
-    );
+    const pageWidth = pageSize.width;
+
+    const lastContentElementY = await this.findLowestLine(pdfDoc, pageHeight);
 
     const sortedUsers = users.sort((a, b) => a.position - b.position);
 
@@ -43,7 +39,7 @@ export class PdfService {
     });
 
     for (let i = 0; i < pdfSettings.newPagesCount; i++) {
-      pdfDoc.addPage();
+      pdfDoc.addPage([pageHeight, pageWidth]);
     }
 
     const pdfWithInitials = await this.insertInitials(pdfDoc, pdfSettings);
@@ -52,6 +48,7 @@ export class PdfService {
       file: Buffer.from(await pdfWithInitials.save()),
       usersWithCoords: pdfSettings.result,
       pagesCount,
+      pageSize,
     };
   }
 
