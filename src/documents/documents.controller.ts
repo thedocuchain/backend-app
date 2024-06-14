@@ -20,6 +20,7 @@ import { ReadDocumentDto } from './dto/read-document.dto';
 import { UpdateDocumentDto } from './dto/update-document.dto';
 import { SignDocumentDto } from './dto/sign-document.dto';
 import { FindDocumentDto } from './dto/find-document.dto';
+import { SubscribeDocumentDto } from './dto/subscribe-document.dto';
 
 @ApiTags('documents')
 @Controller('documents')
@@ -88,6 +89,16 @@ export class DocumentsController {
     id: string,
   ) {
     return this.documentsService.download(id);
+  }
+
+  @Post(':id/subscribe')
+  @HttpCode(200)
+  subscribe(
+    @Param('id')
+    id: string,
+    @Body() subscribeDocumentDto: SubscribeDocumentDto,
+  ) {
+    return this.documentsService.subscribe(id, subscribeDocumentDto);
   }
 
   @Post(':id/notify')

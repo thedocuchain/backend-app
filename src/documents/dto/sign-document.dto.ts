@@ -15,6 +15,12 @@ export class SignDocumentDto {
   @IsBoolean()
   readonly readRecordsDisclosure: boolean;
   @ApiProperty({
+    description: 'Is this the first time a user has heard about us?',
+    example: true,
+  })
+  @IsBoolean()
+  readonly firstToHear: boolean;
+  @ApiProperty({
     description: 'Have user signed document',
     example: true,
   })

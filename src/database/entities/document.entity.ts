@@ -47,6 +47,12 @@ export class Document {
   @Column('integer', { default: 0 })
   pagesCount: number;
 
+  @Column('integer', { default: 0 })
+  height: number;
+
+  @Column('integer', { default: 0 })
+  width: number;
+
   @Column('text', { nullable: true })
   checkSum: string;
 

@@ -66,8 +66,13 @@ export class FileStorageService {
     return storageFile;
   }
 
-  async getSignedUrl(path: string, linkType: FileLinkTypes): Promise<string> {
+  async getSignedUrl(
+    path: string,
+    linkType: FileLinkTypes,
+    fileName: string,
+  ): Promise<string> {
     let expires = Date.now() + 24 * 1000 * 60 * 60;
+    let resultFileName = `inline`;
     let responseType = 'application/pdf';
     if (linkType === FileLinkTypes.IMAGE) {
       expires = Date.now() + 7 * 24 * 1000 * 60 * 60;
@@ -76,6 +81,7 @@ export class FileStorageService {
 
     if (linkType === FileLinkTypes.DOWNLOAD) {
       responseType = 'application/octet-stream';
+      resultFileName = `attachment; filename="${fileName}"`;
     }
 
     const [signedUrl] = await this.storage
@@ -86,7 +92,7 @@ export class FileStorageService {
         expires,
         version: 'v4',
         responseType,
-        responseDisposition: 'inline',
+        responseDisposition: resultFileName,
       });
 
     return signedUrl;
