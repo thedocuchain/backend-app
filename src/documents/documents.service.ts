@@ -28,6 +28,7 @@ import {
 } from '../common/enums/entities.enum';
 import { IDocumentWithInitials } from '../pdf/interfaces/pdf.interface';
 import { FindDocumentDto } from './dto/find-document.dto';
+import { CreateUserDto } from '../users/dto/create-user.dto';
 
 @Injectable()
 export class DocumentsService {
@@ -116,7 +117,11 @@ export class DocumentsService {
 
     if (users.length > 0) {
       const usersPromises = users.map(async (user) => {
-        return this.usersService.create(user, document);
+        const lowerCasedEmail = user.email.toLowerCase();
+        return this.usersService.create(
+          { ...user, email: lowerCasedEmail },
+          document,
+        );
       });
       await Promise.all(usersPromises);
     }
@@ -159,11 +164,13 @@ export class DocumentsService {
     const downloadLink = await this.fileStorageService.getSignedUrl(
       document.fileStorageId,
       FileLinkTypes.PDF,
+      document.name,
     );
 
     const imageLink = await this.fileStorageService.getSignedUrl(
       document.imageStorageId,
       FileLinkTypes.IMAGE,
+      document.name,
     );
 
     return {
@@ -204,6 +211,7 @@ export class DocumentsService {
       fileLink: await this.fileStorageService.getSignedUrl(
         document.fileStorageId,
         FileLinkTypes.DOWNLOAD,
+        document.name,
       ),
     };
   }
@@ -238,7 +246,15 @@ export class DocumentsService {
 
     await this.documentRepository.update(
       { id: document.id },
-      { pagesCount: documentWithInitials.pagesCount },
+      {
+        pagesCount: documentWithInitials.pagesCount,
+        height: Math.round(documentWithInitials.pageSize.height),
+        width: Math.round(documentWithInitials.pageSize.width),
+        status: DocumentStatuses.SIGNED,
+        checkSum: hash(
+          `${document.name}${document.type}${document.fileStorageId}`,
+        ),
+      },
     );
 
     await this.fileStorageService.replaceFile(
@@ -286,6 +302,7 @@ export class DocumentsService {
     const updatedUser = await this.usersService.update(userId, {
       agreedWithPolicy: signature.agreedWithPolicy,
       readRecordsDisclosure: signature.readRecordsDisclosure,
+      firstToHear: signature.firstToHear,
     });
 
     const documentFileWithMetadata =
@@ -334,7 +351,7 @@ export class DocumentsService {
     );
   }
 
-  async notify(id: string, userId?): Promise<void> {
+  async notify(id: string, userId?: string): Promise<void> {
     const document = await this.findOne(id);
     if (!document) {
       throw new BadRequestException('Document is not found.');
@@ -343,6 +360,7 @@ export class DocumentsService {
     const imageLink = await this.fileStorageService.getSignedUrl(
       document.imageStorageId,
       FileLinkTypes.IMAGE,
+      document.name,
     );
 
     if (userId) {
@@ -361,6 +379,35 @@ export class DocumentsService {
         );
       }
     }
+  }
+
+  async subscribe(id: string, subscribeDocumentDto): Promise<void> {
+    const document = await this.findOne(id);
+    if (!document) {
+      throw new BadRequestException('Document is not found.');
+    }
+    const email = subscribeDocumentDto.email.toLowerCase();
+
+    const existedUser = document.users.find((user) => user.email === email);
+
+    if (existedUser) {
+      throw new BadRequestException('User is already subscribed.');
+    }
+
+    const newUser: CreateUserDto = {
+      email,
+      position: 0,
+      agreedWithPolicy: true,
+      notifyStatus: NotifyStatuses.NOT_SENT,
+      lastNotifyDate: null,
+      firstToHear: true,
+      readRecordsDisclosure: true,
+      role: UserRoles.WATCHER,
+      documentId: document.id,
+      signatures: [],
+    };
+
+    await this.usersService.create(newUser, document);
   }
 
   async getFileHash(fileBuffer: Buffer): Promise<string> {

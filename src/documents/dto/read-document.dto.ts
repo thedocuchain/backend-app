@@ -76,6 +76,18 @@ export class ReadDocumentDto {
   @IsInt()
   pagesCount: number;
 
+  @ApiProperty({
+    example: 842,
+  })
+  @IsInt()
+  height: number;
+
+  @ApiProperty({
+    example: 595,
+  })
+  @IsInt()
+  width: number;
+
   checkSum: string;
 
   @ApiProperty({
