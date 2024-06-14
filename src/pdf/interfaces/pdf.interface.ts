@@ -22,4 +22,5 @@ export interface IDocumentWithInitials {
   file: Buffer;
   usersWithCoords: IUserWithCoords[];
   pagesCount: number;
+  pageSize: { width: number; height: number };
 }
