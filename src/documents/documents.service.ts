@@ -1,7 +1,11 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
+import {
+  BadRequestException,
+  Injectable,
+  NotAcceptableException,
+} from '@nestjs/common';
+import { InjectDataSource, InjectRepository } from '@nestjs/typeorm';
 import { ConfigService } from '@nestjs/config';
-import { Repository } from 'typeorm';
+import { DataSource, Repository } from 'typeorm';
 import { hash } from 'typeorm/util/StringUtils';
 import { v4 as uuidV4 } from 'uuid';
 import * as crypto from 'crypto';
@@ -29,10 +33,14 @@ import {
 import { IDocumentWithInitials } from '../pdf/interfaces/pdf.interface';
 import { FindDocumentDto } from './dto/find-document.dto';
 import { CreateUserDto } from '../users/dto/create-user.dto';
+import { User } from '../database/entities/user.entity';
+import { Signature } from '../database/entities/signature.entity';
+import { FileStorage } from '../file-storage/entities/file-storage.entity';
 
 @Injectable()
 export class DocumentsService {
   constructor(
+    @InjectDataSource() private readonly dataSource: DataSource,
     @InjectRepository(Document)
     private readonly documentRepository: Repository<Document>,
     private readonly fileStorageService: FileStorageService,
@@ -290,57 +298,95 @@ export class DocumentsService {
 
     const signatureId = user.signatures[0].id;
 
-    await this.signaturesService.update(signatureId, {
-      signed: signature.signed,
-      signFont: signature.signFont,
-      signDate: signature.signDate,
-      notified: true,
-      lastNotifyDate: signature.signDate,
-      fontSize: signature.fontSize,
-    });
-
-    const updatedUser = await this.usersService.update(userId, {
+    const updatedUser = {
+      ...user,
       agreedWithPolicy: signature.agreedWithPolicy,
       readRecordsDisclosure: signature.readRecordsDisclosure,
       firstToHear: signature.firstToHear,
-    });
+      signatures: [
+        {
+          ...user.signatures[0],
+          signed: signature.signed,
+          signFont: signature.signFont,
+          signDate: signature.signDate,
+          notified: true,
+          lastNotifyDate: signature.signDate,
+          fontSize: signature.fontSize,
+        },
+      ],
+    };
 
-    const documentFileWithMetadata =
-      await this.fileStorageService.getWithMetaData(document.fileStorageId);
+    let documentFileWithMetadata: FileStorage;
+    let signedDocument: Buffer;
 
-    const signedDocument = await this.pdfService.createSignature(
-      documentFileWithMetadata.buffer,
-      updatedUser,
-    );
+    try {
+      documentFileWithMetadata = await this.fileStorageService.getWithMetaData(
+        document.fileStorageId,
+      );
+      signedDocument = await this.pdfService.createSignature(
+        documentFileWithMetadata.buffer,
+        updatedUser,
+      );
 
-    await this.fileStorageService.replaceFile(
-      document.fileStorageId,
-      signedDocument,
-      documentFileWithMetadata.metadata,
-    );
+      await this.fileStorageService.replaceFile(
+        document.fileStorageId,
+        signedDocument,
+        documentFileWithMetadata.metadata,
+      );
+    } catch (error) {
+      throw new NotAcceptableException(
+        `Error during document signing process: ${error.message}`,
+      );
+    }
 
     const signersCount = document.users.filter(
       (user) => user.role === UserRoles.SIGNER,
     ).length;
 
-    if (document.signedBy === signersCount - 1) {
+    const documentArguments: {
+      status: DocumentStatuses;
+      signedBy: number;
+      hash: string | null;
+    } = {
+      status: DocumentStatuses.PARTIALLY_SIGNED,
+      signedBy: document.signedBy + 1,
+      hash: null,
+    };
+
+    if (documentArguments.signedBy === signersCount) {
       const documentHash = await this.getFileHash(signedDocument);
-      await this.documentRepository.update(
-        { id },
-        {
-          status: DocumentStatuses.COMPLETED,
-          signedBy: document.signedBy + 1,
-          hash: documentHash,
-        },
+      documentArguments.status = DocumentStatuses.COMPLETED;
+      documentArguments.hash = documentHash;
+    }
+
+    const queryRunner = this.dataSource.createQueryRunner();
+
+    await queryRunner.connect();
+
+    try {
+      await queryRunner.startTransaction();
+      await queryRunner.manager.update(Signature, signatureId, {
+        signed: signature.signed,
+        signFont: signature.signFont,
+        signDate: signature.signDate,
+        fontSize: signature.fontSize,
+      });
+      await queryRunner.manager.update(User, userId, {
+        agreedWithPolicy: signature.agreedWithPolicy,
+        readRecordsDisclosure: signature.readRecordsDisclosure,
+        firstToHear: signature.firstToHear,
+      });
+      await queryRunner.manager.update(
+        Document,
+        document.id,
+        documentArguments,
       );
-    } else {
-      await this.documentRepository.update(
-        { id },
-        {
-          status: DocumentStatuses.PARTIALLY_SIGNED,
-          signedBy: document.signedBy + 1,
-        },
-      );
+      await queryRunner.commitTransaction();
+    } catch (err) {
+      await queryRunner.rollbackTransaction();
+      throw err;
+    } finally {
+      await queryRunner.release();
     }
 
     const updatedDocument = await this.findOne(document.id);
