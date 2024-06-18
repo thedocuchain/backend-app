@@ -39,7 +39,7 @@ export class PdfService {
     });
 
     for (let i = 0; i < pdfSettings.newPagesCount; i++) {
-      pdfDoc.addPage([pageHeight, pageWidth]);
+      pdfDoc.addPage([pageWidth, pageHeight]);
     }
 
     const pdfWithInitials = await this.insertInitials(pdfDoc, pdfSettings);
@@ -212,7 +212,7 @@ export class PdfService {
     const dateFontSize = 14;
 
     const pageSize = pdfDoc.getPages()[0].getSize();
-    const dateFormX = pageSize.width / 2 - 25;
+    const dateFormX = pageSize.width / 2 - 25; // TODO set to the middle of page
     const signatureFormX = Math.round((pageSize.width * 2) / 3);
     const usernameWidth = customFont.widthOfTextAtSize(
       user.name,
