@@ -29,6 +29,7 @@ async function bootstrap() {
     .setTitle('Docuchain API')
     .setDescription('The docuchain API description')
     .setVersion('1.0')
+    .addBearerAuth()
     .build();
 
   const document = SwaggerModule.createDocument(app, config);
