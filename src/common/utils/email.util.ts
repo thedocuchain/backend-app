@@ -6,18 +6,33 @@ export function generateEmailTemplate(
   document: Document,
   user: User,
   imageLink: string,
-): string {
+): { subject: string; template: string } {
   const clientUrl = 'https://docuchain.io';
+  const appUrl = 'https://app.docuchain.io';
+  const logoUrl = 'https://app.docuchain.io/assets/logo.png';
   let reminder = `You have <!-- -->${document.name}<!-- --> to review and sign in Docuchain`;
-  let actualStatus = 'In Progress';
+  let actualStatus = 'in progress';
+  let buttonText = 'Review and Sign';
+  let subject = `SIGN: ${document.name}`;
+  let link = `${appUrl}/doc/sign/${document.id}?userId=${user.id}`;
+  let imageBackgroundStyle =
+    'linear-gradient(180deg, rgba(255,255,255,0) 0%, rgba(255,255,255,1) 100%)';
 
   if (user.role === UserRoles.WATCHER) {
+    subject = `VIEW: ${document.name}`;
+    link = `${appUrl}/doc/${document.id}`;
+    buttonText = 'View status';
     reminder = `You have been assigned as a Watcher of <!-- -->${document.name}`;
   }
 
   if (document.status === DocumentStatuses.COMPLETED) {
+    subject = `VIEW: ${document.name}`;
+    link = `${appUrl}/doc/${document.id}`;
     reminder = `🎉 All signers completed with <!-- -->${document.name}`;
     actualStatus = 'Completed';
+    buttonText = 'View completed document';
+    imageBackgroundStyle =
+      'linear-gradient(rgba(245,253,241,0.5) 0%, rgba(245,253,241,1) 100%)';
   }
 
   const signers = document.users
@@ -32,11 +47,20 @@ export function generateEmailTemplate(
     .filter((user) => user.role === UserRoles.WATCHER)
     .map(
       (user, index) =>
-        `<p style="font-size:14px;line-height:24px;margin:0;color:#000">${index + 1}. ${user.name ?? ''} <a href="mailto:${user.email}" style="color:#067df7;text-decoration:none" target="_blank">(${user.email})</a></p>`,
+        `<p style="font-size:14px;line-height:24px;margin:0;color:#000">${index + 1}. ${user.name ?? ''} <a href="mailto:${user.email}" style="color:#067df7;text-decoration:none" target="_blank">${user.name ? `(${user.email})` : `${user.email}`}</a></p>`,
     )
     .join('');
 
-  return `<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+  let watchersBlock = `<p style="font-size:14px;line-height:24px;margin:12px 0 0 0;font-weight:600;color:#000">Watchers:</p>
+  ${watchers}`;
+
+  if (watchers.length === 0) {
+    watchersBlock = '';
+  }
+
+  return {
+    subject: subject,
+    template: `<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 <html style="font-family:Inter;background-color:#F6F9FC" dir="ltr" lang="en">
   <head>
     <meta content="text/html; charset=UTF-8" http-equiv="Content-Type" />
@@ -66,9 +90,9 @@ export function generateEmailTemplate(
                       <tbody>
                         <tr>
                           <td>
-                          <td align="left" width="150" data-id="__react-email-column"><a href=${clientUrl} style="color:#067df7;text-decoration:none" target="_blank"><img alt="" src="${clientUrl}/app/assets/logo.png" style="display:block;outline:none;border:none;text-decoration:none" width="151" /></a></td>
+                          <td align="left" width="150" data-id="__react-email-column"><a href=${clientUrl} style="color:#067df7;text-decoration:none" target="_blank"><img alt="" src="${logoUrl}" style="display:block;outline:none;border:none;text-decoration:none" width="151" /></a></td>
                           <td align="right" width="450" data-id="__react-email-column">
-                            <p style="font-size:14px;line-height:24px;margin:0;color:#626C7F">ID: <!-- -->${document.shortId}<!-- --> (${actualStatus})</p>
+                            <p style="font-size:14px;line-height:24px;margin:0;color:#626C7F">ID: <!-- -->${document.shortId.toUpperCase()}<!-- --> (${actualStatus})</p>
                           </td>
                   </td>
                 </tr>
@@ -78,12 +102,12 @@ export function generateEmailTemplate(
             <table align="center" width="100%" border="0" cellPadding="0" cellSpacing="0" role="presentation">
               <tbody>
                 <tr>
-                  <td><a href="${clientUrl}/doc/${document.id}" style="color:#067df7;text-decoration:none" target="_blank">
-                      <table align="center" width="100%" border="0" cellPadding="0" cellSpacing="0" role="presentation" style="width:100%;min-width:300px;height:330px;min-height:330px;margin:0;border:1px solid #D0D5DD;border-radius:12px;overflow:hidden;background-size:cover;position:relative;background-image:linear-gradient(rgba(245,253,241,0.5) 0%, rgba(245,253,241,1) 100%),
+                  <td><a href="${link}" style="color:#067df7;text-decoration:none" target="_blank">
+                      <table align="center" width="100%" border="0" cellPadding="0" cellSpacing="0" role="presentation" style="width:100%;min-width:300px;height:330px;min-height:330px;margin:0;border:1px solid #D0D5DD;border-radius:12px;overflow:hidden;background-size:cover;position:relative;background-image:${imageBackgroundStyle},
             url(${imageLink})">
                         <tbody style="width:100%">
                           <tr style="width:100%">
-                            <td height="330" align="center" valign="bottom" data-id="__react-email-column"><a href="${clientUrl}/doc/${document.id}" style="line-height:100%;text-decoration:none;display:block;max-width:260px;width:fit-content;max-height:44px;height:fit-content;padding:10px 24px 10px 24px;border-radius:8px;border:1px solid #9FE870;background:#9FE870;box-shadow:0px 1px 2px 0px rgba(16, 24, 40, 0.05);cursor:pointer;margin-bottom:24px" target="_blank"><span><!--[if mso]><i style="letter-spacing: 24px;mso-font-width:-100%;mso-text-raise:15" hidden>&nbsp;</i><![endif]--></span><span style="max-width:100%;display:inline-block;line-height:120%;mso-padding-alt:0px;mso-text-raise:7.5px"><p style="font-size:16px;line-height:24px;margin:0;display:block;font-weight:600;width:100%;color:#000;letter-spacing:0.32px;white-space:nowrap">View completed document<span style="margin-left:6px">→</span></p></span><span><!--[if mso]><i style="letter-spacing: 24px;mso-font-width:-100%" hidden>&nbsp;</i><![endif]--></span></a></td>
+                            <td height="330" align="center" valign="bottom" data-id="__react-email-column"><a href="${link}" style="line-height:100%;text-decoration:none;display:block;max-width:260px;width:fit-content;max-height:44px;height:fit-content;padding:10px 24px 10px 24px;border-radius:8px;border:1px solid #9FE870;background:#9FE870;box-shadow:0px 1px 2px 0px rgba(16, 24, 40, 0.05);cursor:pointer;margin-bottom:24px" target="_blank"><span><!--[if mso]><i style="letter-spacing: 24px;mso-font-width:-100%;mso-text-raise:15" hidden>&nbsp;</i><![endif]--></span><span style="max-width:100%;display:inline-block;line-height:120%;mso-padding-alt:0px;mso-text-raise:7.5px"><p style="font-size:16px;line-height:24px;margin:0;display:block;font-weight:600;width:100%;color:#000;letter-spacing:0.32px;white-space:nowrap">${buttonText}<span style="margin-left:6px">→</span></p></span><span><!--[if mso]><i style="letter-spacing: 24px;mso-font-width:-100%" hidden>&nbsp;</i><![endif]--></span></a></td>
                           </tr>
                         </tbody>
                       </table>
@@ -103,8 +127,7 @@ export function generateEmailTemplate(
                 <tr style="width:100%">
                   <p style="font-size:14px;line-height:24px;margin:12px 0 0 0;font-weight:600;color:#000">Signers:</p>
                   ${signers}
-                  <p style="font-size:14px;line-height:24px;margin:12px 0 0 0;font-weight:600;color:#000">Watchers:</p>
-                  ${watchers}
+                  ${watchersBlock}
                 </tr>
               </tbody>
             </table>
@@ -133,7 +156,7 @@ export function generateEmailTemplate(
                       <tbody style="width:100%">
                         <tr style="width:100%">
                           <p style="font-size:14px;line-height:20px;margin:0;color:#626C7F;font-weight:700;letter-spacing:0.28px">Questions about the Document?</p>
-                          <p style="font-size:14px;line-height:20px;margin:0;color:#626C7F;letter-spacing:0.28px">If you need to modify the document or have questions about the details in the document, please reach out to the to the document's creator by emailing them directly.</p>
+                          <p style="font-size:14px;line-height:20px;margin:0;color:#626C7F;letter-spacing:0.28px">If you need to modify the document or have questions about the details in the document, please reach out to the document's creator by emailing them directly.</p>
                         </tr>
                       </tbody>
                     </table>
@@ -159,5 +182,6 @@ export function generateEmailTemplate(
     </tbody>
     </table>
   </body>
-</html>`;
+</html>`,
+  };
 }
