@@ -36,6 +36,8 @@ import { CreateUserDto } from '../users/dto/create-user.dto';
 import { User } from '../database/entities/user.entity';
 import { Signature } from '../database/entities/signature.entity';
 import { FileStorage } from '../file-storage/entities/file-storage.entity';
+import { SubscribeDocumentDto } from './dto/subscribe-document.dto';
+import { AuthService } from '../auth/auth.service';
 
 @Injectable()
 export class DocumentsService {
@@ -49,6 +51,7 @@ export class DocumentsService {
     private readonly pdfService: PdfService,
     private readonly signaturesService: SignaturesService,
     private readonly notificationsService: NotificationsService,
+    private readonly authService: AuthService,
   ) {}
   public async create(file: Express.Multer.File): Promise<UploadDocumentDto> {
     if (!file) {
@@ -427,7 +430,10 @@ export class DocumentsService {
     }
   }
 
-  async subscribe(id: string, subscribeDocumentDto): Promise<void> {
+  async subscribe(
+    id: string,
+    subscribeDocumentDto: SubscribeDocumentDto,
+  ): Promise<void> {
     const document = await this.findOne(id);
     if (!document) {
       throw new BadRequestException('Document is not found.');
