@@ -41,8 +41,11 @@ export class NotificationsService {
     }
 
     const sendEmailPromises = users.map(async (user) => {
-      const subject = `VIEW: ${document.name}`;
-      const template = generateEmailTemplate(document, user, imageLink);
+      const { template, subject } = generateEmailTemplate(
+        document,
+        user,
+        imageLink,
+      );
       return this.mg.messages.create(this.domain, {
         from: this.emailFrom,
         to: [user.email],
