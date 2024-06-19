@@ -62,5 +62,5 @@ export class CreateSignatureDto {
 
   @IsOptional()
   @IsString()
-  check_sum?: string;
+  checkSum?: string;
 }
