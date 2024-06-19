@@ -227,7 +227,7 @@ export class DocumentsService {
     };
   }
 
-  private async setInitials(document: Document): Promise<Document> {
+  private async setInitials(document: Document): Promise<void> {
     const signers = document.users.filter(
       (user) => user.role === UserRoles.SIGNER,
     );
@@ -261,7 +261,6 @@ export class DocumentsService {
         pagesCount: documentWithInitials.pagesCount,
         height: Math.round(documentWithInitials.pageSize.height),
         width: Math.round(documentWithInitials.pageSize.width),
-        status: DocumentStatuses.SIGNED,
         checkSum: hash(
           `${document.name}${document.type}${document.fileStorageId}`,
         ),
@@ -273,8 +272,6 @@ export class DocumentsService {
       documentWithInitials.file,
       documentFile.metadata,
     );
-
-    return this.findOne(document.id);
   }
 
   public async sign(
