@@ -80,6 +80,10 @@ export class CreateUserDto {
   documentId?: string;
 
   @IsOptional()
+  @IsString()
+  checkSum?: string;
+
+  @IsOptional()
   @IsArray()
   signatures: Signature[];
 }
