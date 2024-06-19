@@ -6,6 +6,7 @@ export function generateEmailTemplate(
   document: Document,
   user: User,
   imageLink: string,
+  signerName?: string,
 ): { subject: string; template: string } {
   const clientUrl = 'https://docuchain.io';
   const appUrl = 'https://app.docuchain.io';
@@ -23,6 +24,10 @@ export function generateEmailTemplate(
     link = `${appUrl}/doc/${document.id}`;
     buttonText = 'View status';
     reminder = `You have been assigned as a Watcher of <!-- -->${document.name}`;
+  }
+
+  if (document.status === DocumentStatuses.PARTIALLY_SIGNED && signerName) {
+    reminder = `🖊 New signature! <!-- -->${signerName}<!-- --> signed <!-- -->${document.name}`;
   }
 
   if (document.status === DocumentStatuses.COMPLETED) {
