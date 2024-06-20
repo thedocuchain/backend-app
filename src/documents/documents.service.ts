@@ -394,6 +394,8 @@ export class DocumentsService {
     await this.notificationsService.sendEmail(
       updatedDocument,
       document.imageStorageId,
+      undefined,
+      updatedUser.name,
     );
   }
 
