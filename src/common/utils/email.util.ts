@@ -22,7 +22,7 @@ export function generateEmailTemplate(
 
   if (user.role === UserRoles.WATCHER) {
     subject = `VIEW: ${document.name}`;
-    link = `${appUrl}/doc/${document.id}`;
+    link = `${appUrl}/doc/${document.id}?apiKey=${token}`;
     buttonText = 'View status';
     reminder = `You have been assigned as a Watcher of <!-- -->${document.name}`;
   }
