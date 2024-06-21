@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { UsersService } from '../users/users.service';
 import { ConfigService } from '@nestjs/config';
@@ -14,29 +14,34 @@ export class AuthService {
     this.secret = configService.get<string>('JWT_SECRET');
   }
 
+  extractPayload(token: string) {
+    try {
+      return this.jwtService.verify(token, {
+        secret: this.secret,
+      });
+    } catch (error) {
+      throw new UnauthorizedException('Invalid token');
+    }
+  }
+
   async validateUser(
-    userId: string,
-    documentId: string,
+    token: string,
   ): Promise<null | { userId: string; documentId: string }> {
-    const user = await this.usersService.findOne(userId);
-    if (user && user.document.id === documentId) {
-      return { userId, documentId };
+    const payload = this.extractPayload(token);
+    const user = await this.usersService.findOne(payload.userId);
+    if (user && user.document.id === payload.documentId) {
+      return payload;
     }
 
     return null;
   }
 
-  async sign(
-    userId: string,
-    documentId: string,
-  ): Promise<{ access_token: string }> {
+  async sign(userId: string, documentId: string): Promise<string> {
     const payload = { userId, documentId };
 
-    return {
-      access_token: await this.jwtService.signAsync(payload, {
-        secret: this.secret,
-        expiresIn: '1d',
-      }),
-    };
+    return await this.jwtService.signAsync(payload, {
+      secret: this.secret,
+      expiresIn: '1d',
+    });
   }
 }
