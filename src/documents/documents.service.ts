@@ -37,6 +37,7 @@ import { User } from '../database/entities/user.entity';
 import { Signature } from '../database/entities/signature.entity';
 import { FileStorage } from '../file-storage/entities/file-storage.entity';
 import { SubscribeDocumentDto } from './dto/subscribe-document.dto';
+import { AuthService } from '../auth/auth.service';
 
 @Injectable()
 export class DocumentsService {
@@ -50,6 +51,7 @@ export class DocumentsService {
     private readonly pdfService: PdfService,
     private readonly signaturesService: SignaturesService,
     private readonly notificationsService: NotificationsService,
+    private readonly authService: AuthService,
   ) {}
   public async create(file: Express.Multer.File): Promise<UploadDocumentDto> {
     if (!file) {

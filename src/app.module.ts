@@ -8,6 +8,10 @@ import { UsersModule } from './users/users.module';
 import { PdfModule } from './pdf/pdf.module';
 import { SignaturesModule } from './signatures/signatures.module';
 import { NotificationsModule } from './notifications/notifications.module';
+import { AuthModule } from './auth/auth.module';
+import { getJwtConfig } from './configs/jwt.config';
+import { PassportModule } from '@nestjs/passport';
+import { JwtModule } from '@nestjs/jwt';
 
 @Module({
   imports: [
@@ -17,12 +21,15 @@ import { NotificationsModule } from './notifications/notifications.module';
       inject: [ConfigService],
       useFactory: getDatabaseConfig,
     }),
+    JwtModule.registerAsync(getJwtConfig()),
+    PassportModule,
     FileStorageModule,
     DocumentsModule,
     UsersModule,
     PdfModule,
     SignaturesModule,
     NotificationsModule,
+    AuthModule,
   ],
   providers: [],
 })

@@ -8,6 +8,7 @@ import { UsersModule } from '../users/users.module';
 import { PdfModule } from '../pdf/pdf.module';
 import { SignaturesModule } from '../signatures/signatures.module';
 import { NotificationsModule } from '../notifications/notifications.module';
+import { AuthModule } from '../auth/auth.module';
 
 @Module({
   imports: [
@@ -17,8 +18,10 @@ import { NotificationsModule } from '../notifications/notifications.module';
     PdfModule,
     SignaturesModule,
     NotificationsModule,
+    AuthModule,
   ],
   controllers: [DocumentsController],
   providers: [DocumentsService],
+  exports: [DocumentsService],
 })
 export class DocumentsModule {}
