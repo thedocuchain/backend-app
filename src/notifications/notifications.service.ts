@@ -11,6 +11,7 @@ import { NotifyStatuses, UserRoles } from '../common/enums/entities.enum';
 import { generateEmailTemplate } from '../common/utils/email.util';
 import { MailgunEvent } from './interfaces/webhook.interface';
 import { UsersService } from '../users/users.service';
+import { AuthService } from '../auth/auth.service';
 
 @Injectable()
 export class NotificationsService {
@@ -21,10 +22,11 @@ export class NotificationsService {
   constructor(
     private configService: ConfigService,
     private readonly usersService: UsersService,
+    private readonly authService: AuthService,
   ) {
     this.mg = new Mailgun(FormData).client(getMailgunConfig(configService));
-    this.domain = configService.get('MAILGUN_DOMAIN');
-    this.emailFrom = configService.get('MAILGUN_FROM_EMAIL');
+    this.domain = configService.get<string>('MAILGUN_DOMAIN');
+    this.emailFrom = configService.get<string>('MAILGUN_FROM_EMAIL');
   }
 
   async sendEmail(
@@ -42,10 +44,12 @@ export class NotificationsService {
     }
 
     const sendEmailPromises = users.map(async (user) => {
+      const token = await this.authService.sign(user.id, document.id);
       const { template, subject } = generateEmailTemplate(
         document,
         user,
         imageLink,
+        token,
         signerName,
       );
       return this.mg.messages.create(this.domain, {
