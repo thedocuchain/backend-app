@@ -8,7 +8,6 @@ import {
   UploadedFile,
   Patch,
   Body,
-  UseGuards,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import {
@@ -28,7 +27,6 @@ import { UpdateDocumentDto } from './dto/update-document.dto';
 import { SignDocumentDto } from './dto/sign-document.dto';
 import { FindDocumentDto } from './dto/find-document.dto';
 import { SubscribeDocumentDto } from './dto/subscribe-document.dto';
-import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 
 @ApiTags('documents')
 @Controller('documents')
@@ -130,7 +128,6 @@ export class DocumentsController {
   }
 
   @ApiBearerAuth()
-  @UseGuards(JwtAuthGuard)
   @Post(':id/users/:userId/sign')
   @HttpCode(200)
   sign(
