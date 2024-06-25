@@ -23,7 +23,7 @@ import { DocumentsService } from './documents.service';
 import { DownloadDocumentDto } from './dto/download-document.dto';
 import { UploadDocumentDto } from './dto/upload-document.dto';
 import { ReadDocumentDto } from './dto/read-document.dto';
-import { UpdateDocumentDto } from './dto/update-document.dto';
+import { AddUsersDocumentDto } from './dto/add-users-document.dto';
 import { SignDocumentDto } from './dto/sign-document.dto';
 import { FindDocumentDto } from './dto/find-document.dto';
 import { SubscribeDocumentDto } from './dto/subscribe-document.dto';
@@ -58,7 +58,7 @@ export class DocumentsController {
     }),
   )
   async upload(@UploadedFile() file: Express.Multer.File) {
-    return this.documentsService.create(file);
+    return this.documentsService.upload(file);
   }
 
   @Post('status')
@@ -74,9 +74,9 @@ export class DocumentsController {
   update(
     @Param('id')
     id: string,
-    @Body() updateDocumentDto: UpdateDocumentDto,
+    @Body() updateDocumentDto: AddUsersDocumentDto,
   ) {
-    return this.documentsService.update(id, updateDocumentDto);
+    return this.documentsService.addUsersToDocument(id, updateDocumentDto);
   }
 
   @Get(':id')
