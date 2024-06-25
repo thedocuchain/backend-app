@@ -39,6 +39,7 @@ import { FileStorage } from '../file-storage/entities/file-storage.entity';
 import { SubscribeDocumentDto } from './dto/subscribe-document.dto';
 import { UpdateDocumentDto } from './dto/update-document.dto';
 import { EventsGateway } from '../events/events.gateway';
+import { AuthService } from '../auth/auth.service';
 
 @Injectable()
 export class DocumentsService {
@@ -53,6 +54,7 @@ export class DocumentsService {
     private readonly signaturesService: SignaturesService,
     private readonly notificationsService: NotificationsService,
     private readonly eventsGateway: EventsGateway,
+    private readonly authService: AuthService,
   ) {}
   public async upload(file: Express.Multer.File): Promise<UploadDocumentDto> {
     if (!file) {
@@ -263,7 +265,31 @@ export class DocumentsService {
     id: string,
     userId: string,
     signature: SignDocumentDto,
+    requestUser: any,
   ): Promise<void> {
+    await this.authService.checkAuthorization(userId, requestUser);
+    const isTokenExpired = await this.authService.isExpired(requestUser);
+
+    if (isTokenExpired) {
+      await this.notify(requestUser.documentId, requestUser.userId);
+      throw new BadRequestException(
+        'Your token has expired. Check email with a new token.',
+      );
+    }
+
+    if (userId != requestUser?.userId) {
+      throw new BadRequestException(
+        'You are not allowed to sign this document.',
+      );
+    }
+
+    if (requestUser.exp * 1000 < Date.now()) {
+      await this.notify(requestUser.documentId, requestUser.userId);
+      throw new BadRequestException(
+        'Your token has expired. Check email with a new token.',
+      );
+    }
+
     const document = await this.findOne(id);
     const user = document.users.find((user) => user.id === userId);
 
@@ -384,7 +410,7 @@ export class DocumentsService {
     );
   }
 
-  async notify(id: string, userId?: string): Promise<void> {
+  public async notify(id: string, userId?: string): Promise<void> {
     const document = await this.findOne(id);
     if (!document) {
       throw new BadRequestException('Document is not found.');

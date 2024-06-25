@@ -224,7 +224,7 @@ export class PdfService {
     const dateFontSize = 14;
 
     const pageSize = pdfDoc.getPages()[0].getSize();
-    const dateFormX = pageSize.width / 2 - 25; // TODO set to the middle of page
+    const dateFormX = pageSize.width / 2 - 25;
     const signatureFormX = Math.round((pageSize.width * 2) / 3);
     const usernameWidth = customFont.widthOfTextAtSize(
       user.name,
