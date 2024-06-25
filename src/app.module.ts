@@ -12,6 +12,7 @@ import { AuthModule } from './auth/auth.module';
 import { getJwtConfig } from './configs/jwt.config';
 import { PassportModule } from '@nestjs/passport';
 import { JwtModule } from '@nestjs/jwt';
+import { EventsModule } from './events/events.module';
 
 @Module({
   imports: [
@@ -30,6 +31,7 @@ import { JwtModule } from '@nestjs/jwt';
     SignaturesModule,
     NotificationsModule,
     AuthModule,
+    EventsModule,
   ],
   providers: [],
 })
