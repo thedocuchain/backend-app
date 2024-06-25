@@ -1,7 +1,13 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { UsersService } from '../users/users.service';
 import { ConfigService } from '@nestjs/config';
+import { User } from '../database/entities/user.entity';
+import { JwtPayload } from './interfaces/token.interface';
 
 @Injectable()
 export class AuthService {
@@ -14,26 +20,17 @@ export class AuthService {
     this.secret = configService.get<string>('JWT_SECRET');
   }
 
-  extractPayload(token: string) {
-    try {
-      return this.jwtService.verify(token, {
-        secret: this.secret,
-      });
-    } catch (error) {
-      throw new UnauthorizedException('Invalid token');
-    }
-  }
-
   async validateUser(
-    token: string,
-  ): Promise<null | { userId: string; documentId: string }> {
-    const payload = this.extractPayload(token);
-    const user = await this.usersService.findOne(payload.userId);
-    if (user && user.document.id === payload.documentId) {
-      return payload;
+    userId: string,
+    documentId: string,
+  ): Promise<User | undefined> {
+    const user = await this.usersService.findOne(userId);
+    if (user && user.document.id === documentId) {
+      return user;
     }
-
-    return null;
+    throw new UnauthorizedException(
+      'You are not authorized to access this document',
+    );
   }
 
   async sign(userId: string, documentId: string): Promise<string> {
@@ -43,5 +40,20 @@ export class AuthService {
       secret: this.secret,
       expiresIn: '1d',
     });
+  }
+
+  async checkAuthorization(userId: string, payload: JwtPayload): Promise<void> {
+    if (payload && payload?.userId != userId) {
+      throw new BadRequestException(
+        'You are not allowed to sign this document.',
+      );
+    }
+  }
+
+  async isExpired(payload: JwtPayload): Promise<boolean> {
+    if (!payload) {
+      throw new BadRequestException('Invalid token.');
+    }
+    return payload.exp * 1000 < Date.now();
   }
 }
