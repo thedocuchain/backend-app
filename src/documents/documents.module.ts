@@ -21,6 +21,7 @@ import { EventsModule } from '../events/events.module';
     NotificationsModule,
     AuthModule,
     EventsModule,
+    AuthModule,
   ],
   controllers: [DocumentsController],
   providers: [DocumentsService],
