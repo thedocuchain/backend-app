@@ -21,7 +21,7 @@ import { NotificationsService } from '../notifications/notifications.service';
 import { UploadDocumentDto } from './dto/upload-document.dto';
 import { DownloadDocumentDto } from './dto/download-document.dto';
 import { UsersService } from '../users/users.service';
-import { UpdateDocumentDto } from './dto/update-document.dto';
+import { AddUsersDocumentDto } from './dto/add-users-document.dto';
 import { SignDocumentDto } from './dto/sign-document.dto';
 import { ReadDocumentDto } from './dto/read-document.dto';
 import {
@@ -37,6 +37,8 @@ import { User } from '../database/entities/user.entity';
 import { Signature } from '../database/entities/signature.entity';
 import { FileStorage } from '../file-storage/entities/file-storage.entity';
 import { SubscribeDocumentDto } from './dto/subscribe-document.dto';
+import { UpdateDocumentDto } from './dto/update-document.dto';
+import { EventsGateway } from '../events/events.gateway';
 
 @Injectable()
 export class DocumentsService {
@@ -50,8 +52,9 @@ export class DocumentsService {
     private readonly pdfService: PdfService,
     private readonly signaturesService: SignaturesService,
     private readonly notificationsService: NotificationsService,
+    private readonly eventsGateway: EventsGateway,
   ) {}
-  public async create(file: Express.Multer.File): Promise<UploadDocumentDto> {
+  public async upload(file: Express.Multer.File): Promise<UploadDocumentDto> {
     if (!file) {
       throw new BadRequestException('File is required.');
     }
@@ -86,7 +89,7 @@ export class DocumentsService {
       throw new BadRequestException('Document is not created.');
     }
     const shortDocumentId = await this.generateShortDocumentId(newDoc.id);
-    await this.documentRepository.update(newDoc.id, {
+    await this.update(newDoc.id, {
       shortId: shortDocumentId,
     });
     const clientUrl = this.configService.get('CLIENT_APP_REDIRECT_URL');
@@ -96,9 +99,9 @@ export class DocumentsService {
     };
   }
 
-  public async update(
+  public async addUsersToDocument(
     id: string,
-    updateDocumentDto: UpdateDocumentDto,
+    updateDocumentDto: AddUsersDocumentDto,
   ): Promise<void> {
     const documentName = updateDocumentDto.name;
     const users = updateDocumentDto?.users;
@@ -135,10 +138,10 @@ export class DocumentsService {
       await Promise.all(usersPromises);
     }
 
-    await this.documentRepository.update(
-      { id },
-      { name: documentName, status: DocumentStatuses.RECIPIENT_ADDED },
-    );
+    await this.update(id, {
+      name: documentName,
+      status: DocumentStatuses.RECIPIENT_ADDED,
+    });
 
     const updatedDocument = await this.findOne(id);
 
@@ -155,19 +158,6 @@ export class DocumentsService {
 
     if (!document) {
       throw new BadRequestException('Document is not found.');
-    }
-
-    const isEmailsDeliveredToAllUsers = document.users.every(
-      (user) => user.notifyStatus === NotifyStatuses.DELIVERED,
-    );
-
-    if (
-      document.status === DocumentStatuses.SENT &&
-      isEmailsDeliveredToAllUsers
-    ) {
-      await this.documentRepository.update(document.id, {
-        status: DocumentStatuses.DELIVERED,
-      });
     }
 
     const downloadLink = await this.fileStorageService.getSignedUrl(
@@ -253,17 +243,14 @@ export class DocumentsService {
       await Promise.all(signaturesPromises);
     }
 
-    await this.documentRepository.update(
-      { id: document.id },
-      {
-        pagesCount: documentWithInitials.pagesCount,
-        height: Math.round(documentWithInitials.pageSize.height),
-        width: Math.round(documentWithInitials.pageSize.width),
-        checkSum: hash(
-          `${document.name}${document.type}${document.fileStorageId}`,
-        ),
-      },
-    );
+    await this.update(document.id, {
+      pagesCount: documentWithInitials.pagesCount,
+      height: Math.round(documentWithInitials.pageSize.height),
+      width: Math.round(documentWithInitials.pageSize.width),
+      checkSum: hash(
+        `${document.name}${document.type}${document.fileStorageId}`,
+      ),
+    });
 
     await this.fileStorageService.replaceFile(
       document.fileStorageId,
@@ -419,10 +406,7 @@ export class DocumentsService {
       await this.notificationsService.sendEmail(document, imageLink);
 
       if (document.status === DocumentStatuses.RECIPIENT_ADDED) {
-        await this.documentRepository.update(
-          { id },
-          { status: DocumentStatuses.SENT },
-        );
+        await this.update(id, { status: DocumentStatuses.SENT });
       }
     }
   }
@@ -476,5 +460,18 @@ export class DocumentsService {
     const shortId = base32Encoded.slice(0, 12).toLowerCase();
 
     return `${shortId.slice(0, 3)}-${shortId.slice(3, 7)}-${shortId.slice(7, 10)}`;
+  }
+
+  async update(
+    documentId: string,
+    updateDocumentDto: UpdateDocumentDto,
+  ): Promise<void> {
+    await this.documentRepository.update(
+      { id: documentId },
+      { ...updateDocumentDto },
+    );
+    if (updateDocumentDto?.status) {
+      await this.eventsGateway.sendUpdateDocumentStatusMessage(documentId);
+    }
   }
 }

@@ -9,6 +9,7 @@ import { PdfModule } from '../pdf/pdf.module';
 import { SignaturesModule } from '../signatures/signatures.module';
 import { NotificationsModule } from '../notifications/notifications.module';
 import { AuthModule } from '../auth/auth.module';
+import { EventsModule } from '../events/events.module';
 
 @Module({
   imports: [
@@ -19,6 +20,7 @@ import { AuthModule } from '../auth/auth.module';
     SignaturesModule,
     NotificationsModule,
     AuthModule,
+    EventsModule,
   ],
   controllers: [DocumentsController],
   providers: [DocumentsService],
