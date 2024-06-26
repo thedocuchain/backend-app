@@ -18,6 +18,7 @@ export class EventsGateway {
 
   @SubscribeMessage('documents')
   async sendUpdateDocumentStatusMessage(documentId: string) {
-    this.io.to(this.client.id).emit('document_status_updated', documentId);
+    if (this.client && this.client?.id)
+      this.io.to(this.client.id).emit('document_status_updated', documentId);
   }
 }
