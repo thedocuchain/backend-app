@@ -254,7 +254,7 @@ export class PdfService {
         });
         pdfDoc.getPages()[page - 1].drawText(surname, {
           x: signatureFormX + indent,
-          y: yCord,
+          y: yCord - signatureFontSize - 7,
           size: signatureFontSize,
           font: customFont,
           color: rgb(0, 0, 1),
@@ -269,7 +269,7 @@ export class PdfService {
         });
         pdfDoc.getPages()[page - 1].drawText(surname, {
           x: signatureFormX,
-          y: yCord - signatureFontSize - 5,
+          y: yCord - signatureFontSize - 7,
           size: signatureFontSize,
           font: customFont,
           color: rgb(0, 0, 0),
