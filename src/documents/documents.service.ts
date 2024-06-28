@@ -40,6 +40,7 @@ import { SubscribeDocumentDto } from './dto/subscribe-document.dto';
 import { UpdateDocumentDto } from './dto/update-document.dto';
 import { EventsGateway } from '../events/events.gateway';
 import { AuthService } from '../auth/auth.service';
+import { BlockchainService } from '../blockchain/blockchain.service';
 
 @Injectable()
 export class DocumentsService {
@@ -55,6 +56,7 @@ export class DocumentsService {
     private readonly notificationsService: NotificationsService,
     private readonly eventsGateway: EventsGateway,
     private readonly authService: AuthService,
+    private readonly blockchainService: BlockchainService,
   ) {}
   public async upload(file: Express.Multer.File): Promise<UploadDocumentDto> {
     if (!file) {
@@ -358,16 +360,25 @@ export class DocumentsService {
       status: DocumentStatuses;
       signedBy: number;
       hash: string | null;
+      blockchainTransaction: string | null;
     } = {
       status: DocumentStatuses.PARTIALLY_SIGNED,
       signedBy: document.signedBy + 1,
       hash: null,
+      blockchainTransaction: null,
     };
 
     if (documentArguments.signedBy === signersCount) {
       const documentHash = await this.getFileHash(signedDocument);
-      documentArguments.status = DocumentStatuses.COMPLETED;
+      const transactionHash = await this.blockchainSendHash(documentHash);
+      if (transactionHash) {
+        documentArguments.status = DocumentStatuses.BLOCKCHAINED;
+      } else {
+        documentArguments.status = DocumentStatuses.COMPLETED;
+      }
+
       documentArguments.hash = documentHash;
+      documentArguments.blockchainTransaction = transactionHash;
     }
 
     const queryRunner = this.dataSource.createQueryRunner();
@@ -407,6 +418,7 @@ export class DocumentsService {
       document.imageLink,
       undefined,
       updatedUser.name,
+      updatedDocument.hash,
     );
   }
 
@@ -499,5 +511,9 @@ export class DocumentsService {
     if (updateDocumentDto?.status) {
       await this.eventsGateway.sendUpdateDocumentStatusMessage(documentId);
     }
+  }
+
+  async blockchainSendHash(hash: string): Promise<string> {
+    return await this.blockchainService.sendHash(hash);
   }
 }

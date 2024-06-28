@@ -13,6 +13,7 @@ import { getJwtConfig } from './configs/jwt.config';
 import { PassportModule } from '@nestjs/passport';
 import { JwtModule } from '@nestjs/jwt';
 import { EventsModule } from './events/events.module';
+import { BlockchainModule } from './blockchain/blockchain.module';
 
 @Module({
   imports: [
@@ -32,6 +33,7 @@ import { EventsModule } from './events/events.module';
     NotificationsModule,
     AuthModule,
     EventsModule,
+    BlockchainModule,
   ],
   providers: [],
 })
