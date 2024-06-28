@@ -10,8 +10,8 @@ export function generateEmailTemplate(
   signerName?: string,
 ): { subject: string; template: string } {
   const clientUrl = 'https://docuchain.io';
-  const appUrl = 'https://app.docuchain.io';
-  const logoUrl = 'https://app.docuchain.io/assets/logo.png';
+  const appUrl = 'https://docuchain.io/app';
+  const logoUrl = 'https://docuchain.io/app/assets/logo.png';
   let reminder = `You have <!-- -->${document.name}<!-- --> to review and sign in Docuchain`;
   let actualStatus = 'in progress';
   let buttonText = 'Review and Sign';
