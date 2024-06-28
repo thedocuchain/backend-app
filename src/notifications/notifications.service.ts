@@ -42,6 +42,7 @@ export class NotificationsService {
     imageLink: string,
     user?: User,
     signerName?: string,
+    hash?: string,
   ): Promise<void> {
     let users = document.users.filter(
       (user) =>
@@ -60,6 +61,7 @@ export class NotificationsService {
           imageLink,
           token,
           signerName,
+          hash,
         );
         await this.mg.messages.create(this.domain, {
           from: this.emailFrom,
