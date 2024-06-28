@@ -33,3 +33,5 @@ jobs:
         MAILGUN_API_KEY: ${{ secrets.MAILGUN_API_KEY }}
         MAILGUN_SIGNING_KEY: ${{ secrets.MAILGUN_SIGNING_KEY }}
         JWT_SECRET: ${{ secrets.JWT_SECRET }}
+        MATIC_PRIVATE_KEY: ${{ secrets.MATIC_PRIVATE_KEY }}
+        POLYGON_RPC_NODE: ${{ secrets.POLYGON_RPC_NODE }}
