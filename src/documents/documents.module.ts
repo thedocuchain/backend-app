@@ -10,6 +10,7 @@ import { SignaturesModule } from '../signatures/signatures.module';
 import { NotificationsModule } from '../notifications/notifications.module';
 import { AuthModule } from '../auth/auth.module';
 import { EventsModule } from '../events/events.module';
+import { BlockchainModule } from '../blockchain/blockchain.module';
 
 @Module({
   imports: [
@@ -22,6 +23,7 @@ import { EventsModule } from '../events/events.module';
     AuthModule,
     EventsModule,
     AuthModule,
+    BlockchainModule,
   ],
   controllers: [DocumentsController],
   providers: [DocumentsService],

@@ -8,6 +8,7 @@ export function generateEmailTemplate(
   imageLink: string,
   token: string,
   signerName?: string,
+  hash?: string,
 ): { subject: string; template: string } {
   const clientUrl = 'https://docuchain.io';
   const appUrl = 'https://app.docuchain.io';
@@ -31,7 +32,10 @@ export function generateEmailTemplate(
     reminder = `🖊 New signature! <!-- -->${signerName}<!-- --> signed <!-- -->${document.name}`;
   }
 
-  if (document.status === DocumentStatuses.COMPLETED) {
+  if (
+    document.status === DocumentStatuses.COMPLETED ||
+    document.status === DocumentStatuses.BLOCKCHAINED
+  ) {
     subject = `VIEW: ${document.name}`;
     link = `${appUrl}/doc/${document.id}?apiKey=${token}`;
     reminder = `🎉 All signers completed with <!-- -->${document.name}`;
@@ -62,6 +66,19 @@ export function generateEmailTemplate(
 
   if (watchers.length === 0) {
     watchersBlock = '';
+  }
+
+  let hashBlock = '';
+
+  if (hash) {
+    hashBlock = `<table align="left" width="100%" border="0" cellPadding="0" cellSpacing="0" role="presentation" style="margin-bottom:9px">
+                      <tbody style="width:100%">
+                        <tr style="width:100%">
+                          <p style="font-size:14px;line-height:20px;margin:0;color:#626C7F;font-weight:700;letter-spacing:0.28px">The document hash: ${hash}</p>
+                          <p style="font-size:14px;line-height:20px;margin:0;color:#626C7F;letter-spacing:0.28px">Your document hash is stored in the blockchain. Keep it for yourself. We securely store your document on the blockchain. This unique hash allows you to easily track any changes to your document.</p>
+                        </tr>
+                      </tbody>
+                    </table>`;
   }
 
   return {
@@ -142,6 +159,7 @@ export function generateEmailTemplate(
               <tbody>
                 <tr>
                   <td>
+                  ${hashBlock}
                     <table align="left" width="100%" border="0" cellPadding="0" cellSpacing="0" role="presentation" style="margin-bottom:9px">
                       <tbody style="width:100%">
                         <tr style="width:100%">
