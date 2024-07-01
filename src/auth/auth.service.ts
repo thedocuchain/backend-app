@@ -28,7 +28,7 @@ export class AuthService {
     if (user && user.document.id === documentId) {
       return user;
     }
-    
+
     throw new UnauthorizedException(
       'You are not authorized to access this document',
     );
