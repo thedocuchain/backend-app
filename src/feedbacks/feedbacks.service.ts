@@ -3,6 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Feedback } from '../database/entities/feedback.entity';
 import { Repository } from 'typeorm';
 import { CreateFeedbackDto } from './dto/create-feeback.dto';
+import { hash } from 'typeorm/util/StringUtils';
 
 @Injectable()
 export class FeedbacksService {
@@ -12,7 +13,11 @@ export class FeedbacksService {
   ) {}
 
   public async create(feedback: CreateFeedbackDto): Promise<void> {
-    const newFeedback = this.feedbackRepository.create(feedback);
+    const checkSum = feedback?.username + feedback.email + feedback.description;
+    const newFeedback = this.feedbackRepository.create({
+      ...feedback,
+      checkSum: hash(checkSum),
+    });
     try {
       await this.feedbackRepository.save(newFeedback);
     } catch (error) {
