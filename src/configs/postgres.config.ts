@@ -3,6 +3,7 @@ import { ConfigService } from '@nestjs/config';
 import { User } from '../database/entities/user.entity';
 import { Document } from '../database/entities/document.entity';
 import { Signature } from '../database/entities/signature.entity';
+import { Feedback } from '../database/entities/feedback.entity';
 
 export const getDatabaseConfig = async (
   configService: ConfigService,
@@ -16,7 +17,7 @@ export const getDatabaseConfig = async (
   autoLoadEntities: false,
   synchronize: false,
   migrationsTableName: 'migrations',
-  entities: [Document, User, Signature],
+  entities: [Document, User, Signature, Feedback],
   extra: {
     connectionTimeoutMillis: 5000,
     query_timeout: 60000,
