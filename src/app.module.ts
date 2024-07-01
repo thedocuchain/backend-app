@@ -14,6 +14,7 @@ import { PassportModule } from '@nestjs/passport';
 import { JwtModule } from '@nestjs/jwt';
 import { EventsModule } from './events/events.module';
 import { BlockchainModule } from './blockchain/blockchain.module';
+import { FeedbacksModule } from './feedbacks/feedbacks.module';
 
 @Module({
   imports: [
@@ -34,6 +35,7 @@ import { BlockchainModule } from './blockchain/blockchain.module';
     AuthModule,
     EventsModule,
     BlockchainModule,
+    FeedbacksModule,
   ],
   providers: [],
 })
