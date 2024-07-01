@@ -5,11 +5,12 @@ import { UsersModule } from '../users/users.module';
 import { AuthModule } from '../auth/auth.module';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { Document } from '../database/entities/document.entity';
+import { TelegramService } from './telegram.service';
 
 @Module({
   imports: [UsersModule, AuthModule, TypeOrmModule.forFeature([Document])],
-  providers: [NotificationsService],
-  exports: [NotificationsService],
+  providers: [NotificationsService, TelegramService],
+  exports: [NotificationsService, TelegramService],
   controllers: [NotificationsController],
 })
 export class NotificationsModule {}
