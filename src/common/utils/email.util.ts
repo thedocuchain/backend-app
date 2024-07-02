@@ -13,17 +13,18 @@ export function generateEmailTemplate(
   const clientUrl = 'https://docuchain.io';
   const appUrl = 'https://docuchain.io/app';
   const logoUrl = 'https://docuchain.io/app/assets/logo.png';
+  const expiredAtTwoDays = Date.now() + 2 * 24 * 3600 * 1000;
   let reminder = `You have <!-- -->${document.name}<!-- --> to review and sign in Docuchain`;
   let actualStatus = 'in progress';
   let buttonText = 'Review and Sign';
   let subject = `SIGN: ${document.name}`;
-  let link = `${appUrl}/doc/sign/${document.id}?userId=${user.id}&apiKey=${token}`;
+  let link = `${appUrl}/doc/sign/${document.id}?userId=${user.id}&apiKey=${token}&expiredAt=${expiredAtTwoDays}`;
   let imageBackgroundStyle =
     'linear-gradient(180deg, rgba(255,255,255,0) 0%, rgba(255,255,255,1) 100%)';
 
   if (user.role === UserRoles.WATCHER) {
     subject = `VIEW: ${document.name}`;
-    link = `${appUrl}/doc/${document.id}?apiKey=${token}`;
+    link = `${appUrl}/doc/${document.id}?apiKey=${token}&expiredAt=${expiredAtTwoDays}`;
     buttonText = 'View status';
     reminder = `You have been assigned as a Watcher of <!-- -->${document.name}`;
   }
@@ -37,7 +38,7 @@ export function generateEmailTemplate(
     document.status === DocumentStatuses.BLOCKCHAINED
   ) {
     subject = `VIEW: ${document.name}`;
-    link = `${appUrl}/doc/${document.id}?apiKey=${token}`;
+    link = `${appUrl}/doc/${document.id}?apiKey=${token}&expiredAt=${expiredAtTwoDays}`;
     reminder = `🎉 All signers completed with <!-- -->${document.name}`;
     actualStatus = 'Completed';
     buttonText = 'View completed document';
