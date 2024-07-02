@@ -15,6 +15,7 @@ import { JwtModule } from '@nestjs/jwt';
 import { EventsModule } from './events/events.module';
 import { BlockchainModule } from './blockchain/blockchain.module';
 import { FeedbacksModule } from './feedbacks/feedbacks.module';
+import { EventEmitterModule } from '@nestjs/event-emitter';
 
 @Module({
   imports: [
@@ -25,6 +26,7 @@ import { FeedbacksModule } from './feedbacks/feedbacks.module';
       useFactory: getDatabaseConfig,
     }),
     JwtModule.registerAsync(getJwtConfig()),
+    EventEmitterModule.forRoot(),
     PassportModule,
     FileStorageModule,
     DocumentsModule,
