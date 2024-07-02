@@ -25,14 +25,18 @@ export class BlockchainService {
   async sendHash(hash: string): Promise<string> {
     try {
       const from = this.account.address;
-      const gasPrice = await this.web3.eth.getGasPrice();
+      let gasPrice = await this.web3.eth.getGasPrice();
+      gasPrice = BigInt(gasPrice);
+      const increasedGasPrice = (gasPrice * 140n) / 100n;
+      const nonce = await this.web3.eth.getTransactionCount(from);
       const tx = {
         from,
         to: '0x0000000000000000000000000000000000000000',
         value: this.web3.utils.toWei('0.001', 'ether'),
         data: this.web3.utils.asciiToHex(hash),
         gas: 4000000,
-        gasPrice,
+        gasPrice: increasedGasPrice,
+        nonce,
         chainId: 137,
       };
 
@@ -40,7 +44,6 @@ export class BlockchainService {
       const receipt = await this.web3.eth.sendSignedTransaction(
         signedTransaction.rawTransaction as string,
       );
-
       return receipt.transactionHash.toString();
     } catch (error) {
       this.logger.error('Error sending transaction', error.stack);
