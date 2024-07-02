@@ -5,6 +5,7 @@ import {
 } from '@nestjs/common';
 import { InjectDataSource, InjectRepository } from '@nestjs/typeorm';
 import { ConfigService } from '@nestjs/config';
+import { EventEmitter2, OnEvent } from '@nestjs/event-emitter';
 import { DataSource, Repository } from 'typeorm';
 import { hash } from 'typeorm/util/StringUtils';
 import { v4 as uuidV4 } from 'uuid';
@@ -57,6 +58,7 @@ export class DocumentsService {
     private readonly eventsGateway: EventsGateway,
     private readonly authService: AuthService,
     private readonly blockchainService: BlockchainService,
+    private readonly eventEmitter: EventEmitter2,
   ) {}
   public async upload(file: Express.Multer.File): Promise<UploadDocumentDto> {
     if (!file) {
@@ -370,15 +372,13 @@ export class DocumentsService {
 
     if (documentArguments.signedBy === signersCount) {
       const documentHash = await this.getFileHash(signedDocument);
-      const transactionHash = await this.blockchainSendHash(documentHash);
-      if (transactionHash) {
-        documentArguments.status = DocumentStatuses.BLOCKCHAINED;
-      } else {
-        documentArguments.status = DocumentStatuses.COMPLETED;
-      }
+      documentArguments.status = DocumentStatuses.COMPLETED;
 
       documentArguments.hash = documentHash;
-      documentArguments.blockchainTransaction = transactionHash;
+      this.eventEmitter.emit('document.hashed', {
+        documentId: document.id,
+        documentHash,
+      });
     }
 
     const queryRunner = this.dataSource.createQueryRunner();
@@ -420,6 +420,40 @@ export class DocumentsService {
       updatedUser.name,
       updatedDocument.hash,
     );
+  }
+
+  @OnEvent('document.hashed', { async: true })
+  private async handleDocumentCreatedEvent({
+    documentId,
+    documentHash,
+  }): Promise<void> {
+    try {
+      const transactionHash = await this.blockchainSendHash(documentHash);
+      const documentArguments = {
+        status: transactionHash
+          ? DocumentStatuses.BLOCKCHAINED
+          : DocumentStatuses.COMPLETED,
+        blockchainTransaction: transactionHash,
+      };
+
+      const queryRunner = this.dataSource.createQueryRunner();
+      await queryRunner.connect();
+      try {
+        await queryRunner.startTransaction();
+        await queryRunner.manager.update(
+          Document,
+          documentId,
+          documentArguments,
+        );
+        await queryRunner.commitTransaction();
+      } catch (err) {
+        await queryRunner.rollbackTransaction();
+      } finally {
+        await queryRunner.release();
+      }
+    } catch (error) {
+      console.error(`Error in blockchainSendHash: ${error.message}`);
+    }
   }
 
   public async notify(id: string, userId?: string): Promise<void> {
