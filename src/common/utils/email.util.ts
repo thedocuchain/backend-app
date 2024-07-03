@@ -18,13 +18,13 @@ export function generateEmailTemplate(
   let actualStatus = 'in progress';
   let buttonText = 'Review and Sign';
   let subject = `SIGN: ${document.name}`;
-  let link = `${appUrl}/doc/sign/${document.id}?userId=${user.id}&apiKey=${token}&expiredAt=${expiredAtTwoDays}`;
+  let link = `${appUrl}/doc/sign/${document.id}?userId=${user.id}&token=${token}&expiredAt=${expiredAtTwoDays}`;
   let imageBackgroundStyle =
     'linear-gradient(180deg, rgba(255,255,255,0) 0%, rgba(255,255,255,1) 100%)';
 
   if (user.role === UserRoles.WATCHER) {
     subject = `VIEW: ${document.name}`;
-    link = `${appUrl}/doc/${document.id}?apiKey=${token}&expiredAt=${expiredAtTwoDays}`;
+    link = `${appUrl}/doc/${document.id}?token=${token}&expiredAt=${expiredAtTwoDays}`;
     buttonText = 'View status';
     reminder = `You have been assigned as a Watcher of <!-- -->${document.name}`;
   }
@@ -38,7 +38,7 @@ export function generateEmailTemplate(
     document.status === DocumentStatuses.BLOCKCHAINED
   ) {
     subject = `VIEW: ${document.name}`;
-    link = `${appUrl}/doc/${document.id}?apiKey=${token}&expiredAt=${expiredAtTwoDays}`;
+    link = `${appUrl}/doc/${document.id}?token=${token}&expiredAt=${expiredAtTwoDays}`;
     reminder = `🎉 All signers completed with <!-- -->${document.name}`;
     actualStatus = 'Completed';
     buttonText = 'View completed document';
