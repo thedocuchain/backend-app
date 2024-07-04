@@ -9,7 +9,7 @@ export function generateEmailTemplate(
   token: string,
   signerName?: string,
   hash?: string,
-): { subject: string; template: string } {
+): { subject: string; preview: string; template: string } {
   const clientUrl = 'https://docuchain.io';
   const polygonUrl = `https://polygonscan.com/tx/${hash}`;
   const appUrl = 'https://docuchain.io/app';
@@ -18,19 +18,23 @@ export function generateEmailTemplate(
   let reminder = `You have <!-- -->${document.name}<!-- --> to review and sign in Docuchain`;
   let actualStatus = 'in progress';
   let buttonText = 'Review and Sign';
-  let subject = `SIGN: ${document.name}`;
+  let subject = `Complete with DocuChain: ${document.name}`;
+  let preview = `You have ${document.name} to review and sign in DocuChain`;
   let link = `${appUrl}/doc/sign/${document.id}?userId=${user.id}&token=${token}&expiredAt=${expiredAtTwoDays}`;
   let imageBackgroundStyle =
     'linear-gradient(180deg, rgba(255,255,255,0) 0%, rgba(255,255,255,1) 100%)';
 
   if (user.role === UserRoles.WATCHER) {
-    subject = `VIEW: ${document.name}`;
+    subject = `Track signing with DocuChain: ${document.name}`;
+    preview = `You have been assigned as a Watcher of ${document.name}`;
     link = `${appUrl}/doc/${document.id}?token=${token}&expiredAt=${expiredAtTwoDays}`;
     buttonText = 'View status';
     reminder = `You have been assigned as a Watcher of <!-- -->${document.name}`;
   }
 
   if (document.status === DocumentStatuses.PARTIALLY_SIGNED && signerName) {
+    subject = `Partial Signing with DocuChain: ${document.name}`;
+    preview = `🖊 New signature! ${signerName} signed ${document.name}`;
     reminder = `🖊 New signature! <!-- -->${signerName}<!-- --> signed <!-- -->${document.name}`;
   }
 
@@ -38,7 +42,8 @@ export function generateEmailTemplate(
     document.status === DocumentStatuses.COMPLETED ||
     document.status === DocumentStatuses.BLOCKCHAINED
   ) {
-    subject = `VIEW: ${document.name}`;
+    subject = `Completed with DocuChain: ${document.name}`;
+    preview = `🎉 All signers completed with ${document.name}`;
     link = `${appUrl}/doc/${document.id}?token=${token}&expiredAt=${expiredAtTwoDays}`;
     reminder = `🎉 All signers completed with <!-- -->${document.name}`;
     actualStatus = 'Completed';
@@ -63,7 +68,7 @@ export function generateEmailTemplate(
     )
     .join('');
 
-  let watchersBlock = `<p style="font-size:14px;line-height:24px;margin:12px 0 0 0;font-weight:600;color:#000">Watchers:</p>
+  let watchersBlock = `<p style="font-size:14px;line-height:24px;margin:12px 0 0 0;font-weight:600;color:#000">Watchers</p>
   ${watchers}`;
 
   if (watchers.length === 0) {
@@ -85,6 +90,7 @@ export function generateEmailTemplate(
 
   return {
     subject: subject,
+    preview: preview,
     template: `<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 <html style="font-family:Inter;background-color:#F6F9FC" dir="ltr" lang="en">
   <head>
@@ -150,7 +156,7 @@ export function generateEmailTemplate(
             <table align="center" width="100%" border="0" cellPadding="0" cellSpacing="0" role="presentation">
               <tbody style="width:100%">
                 <tr style="width:100%">
-                  <p style="font-size:14px;line-height:24px;margin:12px 0 0 0;font-weight:600;color:#000">Signers:</p>
+                  <p style="font-size:14px;line-height:24px;margin:12px 0 0 0;font-weight:600;color:#000">Signers</p>
                   ${signers}
                   ${watchersBlock}
                 </tr>
@@ -167,6 +173,14 @@ export function generateEmailTemplate(
                         <tr style="width:100%">
                           <p style="font-size:14px;line-height:20px;margin:0;color:#626C7F;font-weight:700;letter-spacing:0.28px">❗Do Not Share This Email</p>
                           <p style="font-size:14px;line-height:20px;margin:0;color:#626C7F;letter-spacing:0.28px">This email contains a secure link to DocuChain. Please do not share this email, link, or access code with others.</p>
+                        </tr>
+                      </tbody>
+                    </table>
+                    <table align="left" width="100%" border="0" cellPadding="0" cellSpacing="0" role="presentation" style="margin-bottom:9px">
+                      <tbody style="width:100%">
+                        <tr style="width:100%">
+                          <p style="font-size:14px;line-height:20px;margin:0;color:#626C7F;font-weight:700;letter-spacing:0.28px">Alternative method to track document status</p>
+                          <p style="font-size:14px;line-height:20px;margin:0;color:#626C7F;letter-spacing:0.28px">Visit <a href=${clientUrl} style="color:#626C7F;text-decoration:underline" target="_blank">DocuChain.io</a>, click "Check Signing Status" and enter the document ID: ${document.shortId.toUpperCase()}.</p>
                         </tr>
                       </tbody>
                     </table>
