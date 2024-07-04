@@ -369,15 +369,17 @@ export class DocumentsService {
       hash: null,
       blockchainTransaction: null,
     };
-
+    let attachedFile = undefined;
     if (documentArguments.signedBy === signersCount) {
-      const documentHash = await this.getFileHash(signedDocument);
       documentArguments.status = DocumentStatuses.COMPLETED;
-
+      attachedFile = signedDocument;
+      const documentHash = await this.getFileHash(signedDocument);
       documentArguments.hash = documentHash;
       this.eventEmitter.emit('document.hashed', {
-        documentId: document.id,
+        document,
         documentHash,
+        updatedUser,
+        attachedFile,
       });
     }
 
@@ -411,21 +413,24 @@ export class DocumentsService {
       await queryRunner.release();
     }
 
-    const updatedDocument = await this.findOne(document.id);
+    // const updatedDocument = await this.findOne(document.id);
 
-    await this.notificationsService.sendEmail(
-      updatedDocument,
-      document.imageLink,
-      undefined,
-      updatedUser.name,
-      updatedDocument.hash,
-    );
+    // await this.notificationsService.sendEmail(
+    //   updatedDocument,
+    //   document.imageLink,
+    //   undefined,
+    //   updatedUser.name,
+    //   updatedDocument.hash,
+    //   attachedFile
+    // );
   }
 
   @OnEvent('document.hashed', { async: true })
-  private async handleDocumentCreatedEvent({
-    documentId,
+  private async handleDocumentHashedEvent({
+    document,
     documentHash,
+    updatedUser,
+    attachedFile,
   }): Promise<void> {
     try {
       const transactionHash = await this.blockchainSendHash(documentHash);
@@ -442,7 +447,7 @@ export class DocumentsService {
         await queryRunner.startTransaction();
         await queryRunner.manager.update(
           Document,
-          documentId,
+          document.id,
           documentArguments,
         );
         await queryRunner.commitTransaction();
@@ -450,6 +455,18 @@ export class DocumentsService {
         await queryRunner.rollbackTransaction();
       } finally {
         await queryRunner.release();
+      }
+
+      if (transactionHash) {
+        document.status = DocumentStatuses.BLOCKCHAINED;
+        await this.notificationsService.sendEmail(
+          document,
+          document.imageLink,
+          undefined,
+          updatedUser.name,
+          transactionHash,
+          attachedFile,
+        );
       }
     } catch (error) {
       console.error(`Error in blockchainSendHash: ${error.message}`);
@@ -512,7 +529,9 @@ export class DocumentsService {
       signatures: [],
     };
 
-    await this.usersService.create(newUser, document);
+    const createdUser = await this.usersService.create(newUser, document);
+
+    await this.notify(document.id, createdUser.id);
   }
 
   async getFileHash(fileBuffer: Buffer): Promise<string> {

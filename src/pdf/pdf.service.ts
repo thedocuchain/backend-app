@@ -286,7 +286,7 @@ export class PdfService {
     }
     pdfDoc.getPages()[page - 1].drawText(`${signatureDate}`, {
       x: dateFormX,
-      y: yCord - dateFontSize / 2,
+      y: yCord,
       size: dateFontSize,
       font: defaultFont,
       color: rgb(0, 0, 0),
