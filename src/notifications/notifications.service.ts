@@ -43,6 +43,7 @@ export class NotificationsService {
     user?: User,
     signerName?: string,
     hash?: string,
+    file?: Buffer | undefined,
   ): Promise<void> {
     let users = document.users.filter(
       (user) =>
@@ -63,15 +64,37 @@ export class NotificationsService {
           signerName,
           hash,
         );
-        await this.mg.messages.create(this.domain, {
-          from: this.emailFrom,
-          to: [user.email],
-          'o:tag': [user.id, document.id],
-          subject,
-          html: template,
-        });
+        if (file) {
+          await this.mg.messages.create(this.domain, {
+            from: this.emailFrom,
+            to: [user.email],
+            'o:tag': [user.id, document.id],
+            subject,
+            html: template,
+            attachment: [
+              {
+                data: file,
+                filename: `${document.name}`.endsWith('.pdf')
+                  ? `${document.name}`
+                  : `${document.name}.pdf`,
+                type: 'application/pdf',
+              },
+            ],
+          });
+        } else {
+          await this.mg.messages.create(this.domain, {
+            from: this.emailFrom,
+            to: [user.email],
+            'o:tag': [user.id, document.id],
+            subject,
+            html: template,
+          });
+        }
       } catch (error) {
         console.error(`Failed to send email:`, error);
+        await this.usersService.update(user.id, {
+          notifyStatus: NotifyStatuses.ERROR,
+        });
       }
     });
 
@@ -80,16 +103,23 @@ export class NotificationsService {
 
   async handleWebhook(webhookData: MailgunEvent): Promise<void> {
     const timestamp = webhookData['event-data'].timestamp;
-    const notifyStatus = NotifyStatuses.DELIVERED;
+    let notifyStatus = NotifyStatuses.DELIVERED;
     const lastNotifyDate = new Date(timestamp * 1000);
     const userId = webhookData['event-data'].tags[0];
     const documentId = webhookData['event-data'].tags[1];
+
+    if (webhookData['event-data'].event === 'failed') {
+      notifyStatus = NotifyStatuses.ERROR;
+    }
     if (timestamp && userId) {
       await this.usersService.update(userId, { notifyStatus, lastNotifyDate });
       const document = await this.documentRepository.findOneBy({
         id: documentId,
       });
-      if (document.status === DocumentStatuses.SENT) {
+      if (
+        document.status === DocumentStatuses.SENT &&
+        notifyStatus === NotifyStatuses.DELIVERED
+      ) {
         await this.documentRepository.update(
           { id: documentId },
           { status: DocumentStatuses.DELIVERED },

@@ -18,6 +18,7 @@ export enum UserRoles {
 export enum NotifyStatuses {
   NOT_SENT = 'not sent',
   DELIVERED = 'delivered',
+  ERROR = 'error',
 }
 
 export enum FileLinkTypes {
