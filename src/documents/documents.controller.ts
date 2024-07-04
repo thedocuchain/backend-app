@@ -56,7 +56,7 @@ export class DocumentsController {
     FileInterceptor('file', {
       limits: {
         files: 1,
-        fileSize: 5 * 1024 * 1024,
+        fileSize: 50 * 1024 * 1024,
       },
     }),
   )

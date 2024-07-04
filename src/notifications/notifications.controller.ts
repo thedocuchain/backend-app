@@ -12,7 +12,21 @@ export class NotificationsController {
   @Post('webhook/delivered')
   @UseGuards(MailgunWebhookGuard)
   @HttpCode(200)
-  async webhook(@Body() webhookData: MailgunEvent) {
+  async handleDelivered(@Body() webhookData: MailgunEvent) {
+    return this.notificationsService.handleWebhook(webhookData);
+  }
+
+  @Post('webhook/permanent-failed')
+  @UseGuards(MailgunWebhookGuard)
+  @HttpCode(200)
+  async handlePermanentFailed(@Body() webhookData: MailgunEvent) {
+    return this.notificationsService.handleWebhook(webhookData);
+  }
+
+  @Post('webhook/temp-failed')
+  @UseGuards(MailgunWebhookGuard)
+  @HttpCode(200)
+  async handleTempFailed(@Body() webhookData: MailgunEvent) {
     return this.notificationsService.handleWebhook(webhookData);
   }
 }

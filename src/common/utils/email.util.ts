@@ -11,6 +11,7 @@ export function generateEmailTemplate(
   hash?: string,
 ): { subject: string; template: string } {
   const clientUrl = 'https://docuchain.io';
+  const polygonUrl = `https://polygonscan.com/tx/${hash}`;
   const appUrl = 'https://docuchain.io/app';
   const logoUrl = 'https://docuchain.io/app/assets/logo.png';
   const expiredAtTwoDays = Date.now() + 2 * 24 * 3600 * 1000;
@@ -75,7 +76,7 @@ export function generateEmailTemplate(
     hashBlock = `<table align="left" width="100%" border="0" cellPadding="0" cellSpacing="0" role="presentation" style="margin-bottom:9px">
                       <tbody style="width:100%">
                         <tr style="width:100%">
-                          <p style="font-size:14px;line-height:20px;margin:0;color:#626C7F;font-weight:700;letter-spacing:0.28px">The document hash: ${hash}</p>
+                          <p style="font-size:14px;line-height:20px;margin:0;color:#626C7F;font-weight:700;letter-spacing:0.28px">The document hash: <a href=${polygonUrl} style="color:#626C7F;text-decoration:underline;line-height:20px;margin:0;letter-spacing:0.28px;white-space:nowrap" target="_blank">${hash}</a></p>
                           <p style="font-size:14px;line-height:20px;margin:0;color:#626C7F;letter-spacing:0.28px">Your document hash is stored in the blockchain. Keep it for yourself. We securely store your document on the blockchain. This unique hash allows you to easily track any changes to your document.</p>
                         </tr>
                       </tbody>
