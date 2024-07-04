@@ -202,7 +202,7 @@ export class DocumentsService {
     return {
       redirectUrl: `${this.configService.get(
         'CLIENT_APP_REDIRECT_URL',
-      )}/doc/${document.id}`,
+      )}/doc/status/${document.id}`,
     };
   }
 
