@@ -413,16 +413,20 @@ export class DocumentsService {
       await queryRunner.release();
     }
 
-    // const updatedDocument = await this.findOne(document.id);
-
-    // await this.notificationsService.sendEmail(
-    //   updatedDocument,
-    //   document.imageLink,
-    //   undefined,
-    //   updatedUser.name,
-    //   updatedDocument.hash,
-    //   attachedFile
-    // );
+    const updatedDocument = await this.findOne(document.id);
+    if (
+      updatedDocument.status === DocumentStatuses.DELIVERED ||
+      updatedDocument.status === DocumentStatuses.PARTIALLY_SIGNED
+    ) {
+      await this.notificationsService.sendEmail(
+        updatedDocument,
+        document.imageLink,
+        undefined,
+        updatedUser.name,
+        updatedDocument.hash,
+        attachedFile,
+      );
+    }
   }
 
   @OnEvent('document.hashed', { async: true })
