@@ -27,7 +27,7 @@ export function generateEmailTemplate(
   if (user.role === UserRoles.WATCHER) {
     subject = `Track signing with DocuChain: ${document.name}`;
     preview = `You have been assigned as a Watcher of ${document.name}`;
-    link = `${appUrl}/doc/${document.id}?token=${token}&expiredAt=${expiredAtTwoDays}`;
+    link = `${appUrl}/doc/status/${document.id}?token=${token}&expiredAt=${expiredAtTwoDays}`;
     buttonText = 'View status';
     reminder = `You have been assigned as a Watcher of <!-- -->${document.name}`;
   }
@@ -44,7 +44,7 @@ export function generateEmailTemplate(
   ) {
     subject = `Completed with DocuChain: ${document.name}`;
     preview = `🎉 All signers completed with ${document.name}`;
-    link = `${appUrl}/doc/${document.id}?token=${token}&expiredAt=${expiredAtTwoDays}`;
+    link = `${appUrl}/doc/status/${document.id}?token=${token}&expiredAt=${expiredAtTwoDays}&success=true`;
     reminder = `🎉 All signers completed with <!-- -->${document.name}`;
     actualStatus = 'Completed';
     buttonText = 'View completed document';
