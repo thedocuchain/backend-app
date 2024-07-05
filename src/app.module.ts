@@ -16,6 +16,7 @@ import { EventsModule } from './events/events.module';
 import { BlockchainModule } from './blockchain/blockchain.module';
 import { FeedbacksModule } from './feedbacks/feedbacks.module';
 import { EventEmitterModule } from '@nestjs/event-emitter';
+import { RecaptchaModule } from './recaptcha/recaptcha.module';
 
 @Module({
   imports: [
@@ -38,6 +39,7 @@ import { EventEmitterModule } from '@nestjs/event-emitter';
     EventsModule,
     BlockchainModule,
     FeedbacksModule,
+    RecaptchaModule,
   ],
   providers: [],
 })
