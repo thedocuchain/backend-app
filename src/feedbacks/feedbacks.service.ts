@@ -24,7 +24,7 @@ export class FeedbacksService {
     const checkSum = feedback?.username + feedback.email + feedback.description;
     const isHuman = await this.recaptchaService.verify(feedback.recaptchaToken);
 
-    if (!isHuman.success) {
+    if (!isHuman) {
       throw new BadRequestException('reCAPTCHA verification failed');
     }
 
