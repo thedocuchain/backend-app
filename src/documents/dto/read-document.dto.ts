@@ -88,6 +88,12 @@ export class ReadDocumentDto {
   @IsInt()
   width: number;
 
+  @ApiProperty({
+    example: 165738,
+  })
+  @IsInt()
+  size: number;
+
   checkSum: string;
 
   @ApiProperty({
