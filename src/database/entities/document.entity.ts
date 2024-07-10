@@ -53,6 +53,9 @@ export class Document {
   @Column('integer', { default: 0 })
   width: number;
 
+  @Column('integer', { default: 0 })
+  size: number;
+
   @Column('text', { nullable: true })
   checkSum: string;
 
