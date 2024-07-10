@@ -65,15 +65,19 @@ export class DocumentsService {
       throw new BadRequestException('File is required.');
     }
     const filePath = uuidV4();
+    const fileSize = file.size;
     const imagePath = `${filePath}.png`;
     const fileName =
       Buffer.from(file?.originalname, 'latin1').toString('utf8') ?? filePath;
     const fileType = file?.mimetype ?? 'application/pdf';
     const imageType = 'image/png';
-
-    await this.fileStorageService.save(filePath, file.buffer, [
-      { filePath, contentType: file.mimetype },
-    ]);
+    try {
+      await this.fileStorageService.save(filePath, file.buffer, [
+        { filePath, contentType: file.mimetype },
+      ]);
+    } catch (error) {
+      throw new BadRequestException('Failed to save file.');
+    }
 
     const imageBuffer = await this.pdfService.convertPdfToPng(file.buffer);
     await this.fileStorageService.save(imagePath, imageBuffer, [
@@ -83,6 +87,7 @@ export class DocumentsService {
     const document = this.documentRepository.create({
       name: fileName,
       type: fileType,
+      size: fileSize,
       fileStorageId: filePath,
       imageStorageId: imagePath,
       status: DocumentStatuses.UPLOADED,
@@ -420,7 +425,6 @@ export class DocumentsService {
     ) {
       await this.notificationsService.sendEmail(
         updatedDocument,
-        document.imageLink,
         undefined,
         updatedUser.name,
         updatedDocument.hash,
@@ -463,14 +467,25 @@ export class DocumentsService {
 
       if (transactionHash) {
         document.status = DocumentStatuses.BLOCKCHAINED;
-        await this.notificationsService.sendEmail(
-          document,
-          document.imageLink,
-          undefined,
-          updatedUser.name,
-          transactionHash,
-          attachedFile,
-        );
+        if (document.size < 2 * 1024 * 1024) {
+          await this.notificationsService.sendEmail(
+            document,
+            undefined,
+            updatedUser.name,
+            transactionHash,
+            attachedFile,
+          );
+        } else {
+          const downloadLink = await this.download(document.id);
+          await this.notificationsService.sendEmail(
+            document,
+            undefined,
+            updatedUser.name,
+            transactionHash,
+            undefined,
+            downloadLink.fileLink,
+          );
+        }
       }
     } catch (error) {
       console.error(`Error in blockchainSendHash: ${error.message}`);
@@ -483,20 +498,14 @@ export class DocumentsService {
       throw new BadRequestException('Document is not found.');
     }
 
-    const imageLink = await this.fileStorageService.getSignedUrl(
-      document.imageStorageId,
-      FileLinkTypes.IMAGE,
-      document.name,
-    );
-
     if (userId) {
       const user = await this.usersService.findOne(userId);
       if (!user) {
         throw new BadRequestException('User is not found.');
       }
-      await this.notificationsService.sendEmail(document, imageLink, user);
+      await this.notificationsService.sendEmail(document, user);
     } else {
-      await this.notificationsService.sendEmail(document, imageLink);
+      await this.notificationsService.sendEmail(document);
 
       if (document.status === DocumentStatuses.RECIPIENT_ADDED) {
         await this.update(id, { status: DocumentStatuses.SENT });

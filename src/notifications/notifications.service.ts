@@ -18,6 +18,7 @@ import { UsersService } from '../users/users.service';
 import { AuthService } from '../auth/auth.service';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
+import { ReadDocumentDto } from '../documents/dto/read-document.dto';
 
 @Injectable()
 export class NotificationsService {
@@ -38,12 +39,12 @@ export class NotificationsService {
   }
 
   async sendEmail(
-    document: Document,
-    imageLink: string,
+    document: ReadDocumentDto,
     user?: User,
     signerName?: string,
     hash?: string,
     file?: Buffer | undefined,
+    downloadLink?: string,
   ): Promise<void> {
     let users = document.users.filter(
       (user) =>
@@ -59,10 +60,10 @@ export class NotificationsService {
         const { template, subject } = generateEmailTemplate(
           document,
           user,
-          imageLink,
           token,
           signerName,
           hash,
+          downloadLink,
         );
         if (file) {
           await this.mg.messages.create(this.domain, {
