@@ -1,19 +1,20 @@
 import { User } from '../../database/entities/user.entity';
-import { Document } from '../../database/entities/document.entity';
 import { DocumentStatuses, UserRoles } from '../enums/entities.enum';
+import { ReadDocumentDto } from '../../documents/dto/read-document.dto';
 
 export function generateEmailTemplate(
-  document: Document,
+  document: ReadDocumentDto,
   user: User,
-  imageLink: string,
   token: string,
   signerName?: string,
   hash?: string,
+  downloadLink?: string,
 ): { subject: string; preview: string; template: string } {
   const clientUrl = 'https://docuchain.io';
   const polygonUrl = `https://polygonscan.com/tx/${hash}`;
   const appUrl = 'https://docuchain.io/app';
   const logoUrl = 'https://docuchain.io/app/assets/logo.png';
+  const imageLink = document.imageLink;
   const expiredAtTwoDays = Date.now() + 2 * 24 * 3600 * 1000;
   let reminder = `You have <!-- -->${document.name}<!-- --> to review and sign in Docuchain`;
   let actualStatus = 'in progress';
@@ -76,9 +77,7 @@ export function generateEmailTemplate(
   }
 
   let hashBlock = '';
-  const isDownloadButtonBlock = true;
-  const downloadLink =
-    'https://storage.googleapis.com/docuchain-bucket/70e495ce-c9fa-4813-9df7-87edc0019b6a?X-Goog-Algorithm=GOOG4-RSA-SHA256&amp;X-Goog-Credential=REDACTED&amp;X-Goog-Date=20240708T105217Z&amp;X-Goog-Expires=86400&amp;X-Goog-SignedHeaders=host&amp;response-content-type=application%2Foctet-stream&amp;response-content-disposition=attachment%3B%20filename%3D%22%D0%94%D0%BE%D0%BA%D1%83%D0%BC%D0%B5%D0%BD%D1%82%20%D0%A0%D0%B0%D0%B7%D0%BC%D0%B5%D1%80%20%D0%904%2021%20x%2029.7%20%D1%81%D0%BC.pdf%22&amp;X-Goog-Signature=REDACTED';
+  const isDownloadButtonBlock = !!downloadLink;
   let downloadButtonBlock = '';
 
   if (hash) {
