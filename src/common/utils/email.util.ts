@@ -18,14 +18,14 @@ export function generateEmailTemplate(
   let reminder = `You have <!-- -->${document.name}<!-- --> to review and sign in Docuchain`;
   let actualStatus = 'in progress';
   let buttonText = 'Review and Sign';
-  let subject = `Complete with DocuChain: ${document.name}`;
+  let subject = `Complete: ${document.name}`;
   let preview = `You have ${document.name} to review and sign in DocuChain`;
   let link = `${appUrl}/doc/sign/${document.id}?userId=${user.id}&token=${token}&expiredAt=${expiredAtTwoDays}`;
   let imageBackgroundStyle =
     'linear-gradient(180deg, rgba(255,255,255,0) 0%, rgba(255,255,255,1) 100%)';
 
   if (user.role === UserRoles.WATCHER) {
-    subject = `Track signing with DocuChain: ${document.name}`;
+    subject = `Track signing: ${document.name}`;
     preview = `You have been assigned as a Watcher of ${document.name}`;
     link = `${appUrl}/doc/status/${document.id}?token=${token}&expiredAt=${expiredAtTwoDays}`;
     buttonText = 'View status';
@@ -33,7 +33,7 @@ export function generateEmailTemplate(
   }
 
   if (document.status === DocumentStatuses.PARTIALLY_SIGNED && signerName) {
-    subject = `Partial Signing with DocuChain: ${document.name}`;
+    subject = `Partial Signing: ${document.name}`;
     preview = `🖊 New signature! ${signerName} signed ${document.name}`;
     reminder = `🖊 New signature! <!-- -->${signerName}<!-- --> signed <!-- -->${document.name}`;
   }
@@ -42,7 +42,7 @@ export function generateEmailTemplate(
     document.status === DocumentStatuses.COMPLETED ||
     document.status === DocumentStatuses.BLOCKCHAINED
   ) {
-    subject = `Completed with DocuChain: ${document.name}`;
+    subject = `Completed: ${document.name}`;
     preview = `🎉 All signers completed with ${document.name}`;
     link = `${appUrl}/doc/status/${document.id}?token=${token}&expiredAt=${expiredAtTwoDays}&success=true`;
     reminder = `🎉 All signers completed with <!-- -->${document.name}`;
@@ -76,13 +76,27 @@ export function generateEmailTemplate(
   }
 
   let hashBlock = '';
+  const isDownloadButtonBlock = true;
+  const downloadLink =
+    'https://storage.googleapis.com/docuchain-bucket/70e495ce-c9fa-4813-9df7-87edc0019b6a?X-Goog-Algorithm=GOOG4-RSA-SHA256&amp;X-Goog-Credential=REDACTED&amp;X-Goog-Date=20240708T105217Z&amp;X-Goog-Expires=86400&amp;X-Goog-SignedHeaders=host&amp;response-content-type=application%2Foctet-stream&amp;response-content-disposition=attachment%3B%20filename%3D%22%D0%94%D0%BE%D0%BA%D1%83%D0%BC%D0%B5%D0%BD%D1%82%20%D0%A0%D0%B0%D0%B7%D0%BC%D0%B5%D1%80%20%D0%904%2021%20x%2029.7%20%D1%81%D0%BC.pdf%22&amp;X-Goog-Signature=REDACTED';
+  let downloadButtonBlock = '';
 
   if (hash) {
     hashBlock = `<table align="left" width="100%" border="0" cellPadding="0" cellSpacing="0" role="presentation" style="margin-bottom:9px">
                       <tbody style="width:100%">
                         <tr style="width:100%">
                           <p style="font-size:14px;line-height:20px;margin:0;color:#626C7F;font-weight:700;letter-spacing:0.28px">The document hash: <a href=${polygonUrl} style="color:#626C7F;text-decoration:underline;line-height:20px;margin:0;letter-spacing:0.28px;white-space:nowrap" target="_blank">${hash}</a></p>
-                          <p style="font-size:14px;line-height:20px;margin:0;color:#626C7F;letter-spacing:0.28px">Your document hash is stored in the blockchain. Keep it for yourself. We securely store your document on the blockchain. This unique hash allows you to easily track any changes to your document.</p>
+                          <p style="font-size:14px;line-height:20px;margin:0;color:#626C7F;letter-spacing:0.28px">Your document is securely stored on the blockchain forever and fully protected. You can always check if it has changed since signing.</p>
+                        </tr>
+                      </tbody>
+                    </table>`;
+  }
+
+  if (isDownloadButtonBlock) {
+    downloadButtonBlock = `  <table align="center" width="100%" border="0" cellPadding="0" cellSpacing="0" role="presentation">
+                      <tbody style="width:100%">
+                        <tr style="width:100%">
+                          <td align="center" valign="bottom" data-id="__react-email-column"><a href=${downloadLink} style="line-height:100%;text-decoration:none;display:block;max-width:230px;width:230px;max-height:44px;height:fit-content;padding:10px 24px 10px 24px;border-radius:6px;border:1px solid #9FE870;background:#9FE870;box-shadow:0px 1px 2px 0px rgba(16, 24, 40, 0.05);cursor:pointer;margin-bottom:24px" target="_blank"><span><!--[if mso]><i style="letter-spacing: 24px;mso-font-width:-100%;mso-text-raise:15" hidden>&nbsp;</i><![endif]--></span><span style="max-width:100%;display:inline-block;line-height:120%;mso-padding-alt:0px;mso-text-raise:7.5px"><p style="font-size:16px;line-height:24px;margin:0;display:block;font-weight:600;width:100%;color:#000;letter-spacing:0.32px;white-space:nowrap">Download document<span style="margin-left:6px;text-decoration:underline;display:inline-block">↓</span></p></span><span><!--[if mso]><i style="letter-spacing: 24px;mso-font-width:-100%" hidden>&nbsp;</i><![endif]--></span></a></td>
                         </tr>
                       </tbody>
                     </table>`;
@@ -119,7 +133,7 @@ export function generateEmailTemplate(
       <tbody>
         <tr style="width:100%">
           <td>
-            <table align="center" width="100%" border="0" cellPadding="0" cellSpacing="0" role="presentation" style="margin:40px auto 12px;display:flex;max-width:600px;width:100%;min-width:200px;height:100%;-text-align:left;-white-space:pre-wrap;background-color:#FFFFFF;border:1px solid #D0D5DD;border-radius:16px;padding:20px 24px 20px">
+            <table align="center" width="100%" border="0" cellPadding="0" cellSpacing="0" role="presentation" style="margin:40px auto 12px;display:flex;max-width:600px;width:100%;min-width:300px;height:100%;-text-align:left;-white-space:pre-wrap;background-color:#FFFFFF;border:1px solid #D0D5DD;border-radius:16px;padding:20px 24px 20px">
               <tbody>
                 <tr>
                   <td>
@@ -140,11 +154,11 @@ export function generateEmailTemplate(
               <tbody>
                 <tr>
                   <td><a href="${link}" style="color:#067df7;text-decoration:none" target="_blank">
-                      <table align="center" width="100%" border="0" cellPadding="0" cellSpacing="0" role="presentation" style="width:100%;min-width:300px;height:330px;min-height:330px;margin:0;border:1px solid #D0D5DD;border-radius:12px;overflow:hidden;background-size:cover;position:relative;background-image:${imageBackgroundStyle},
+                      <table align="center" width="100%" border="0" cellPadding="0" cellSpacing="0" role="presentation" style="width:100%;min-width:280px;height:330px;min-height:330px;margin:0;border:1px solid #D0D5DD;border-radius:12px;overflow:hidden;background-size:cover;position:relative;background-image:${imageBackgroundStyle},
             url(${imageLink})">
                         <tbody style="width:100%">
                           <tr style="width:100%">
-                            <td height="330" align="center" valign="bottom" data-id="__react-email-column"><a href="${link}" style="line-height:100%;text-decoration:none;display:block;max-width:260px;width:fit-content;max-height:44px;height:fit-content;padding:10px 24px 10px 24px;border-radius:8px;border:1px solid #9FE870;background:#9FE870;box-shadow:0px 1px 2px 0px rgba(16, 24, 40, 0.05);cursor:pointer;margin-bottom:24px" target="_blank"><span><!--[if mso]><i style="letter-spacing: 24px;mso-font-width:-100%;mso-text-raise:15" hidden>&nbsp;</i><![endif]--></span><span style="max-width:100%;display:inline-block;line-height:120%;mso-padding-alt:0px;mso-text-raise:7.5px"><p style="font-size:16px;line-height:24px;margin:0;display:block;font-weight:600;width:100%;color:#000;letter-spacing:0.32px;white-space:nowrap">${buttonText}<span style="margin-left:6px">→</span></p></span><span><!--[if mso]><i style="letter-spacing: 24px;mso-font-width:-100%" hidden>&nbsp;</i><![endif]--></span></a></td>
+                            <td height="330" align="center" valign="bottom" data-id="__react-email-column"><a href="${link}" style="line-height:100%;text-decoration:none;display:block;max-width:230px;width:230px;max-height:44px;height:fit-content;padding:10px 24px 10px 24px;border-radius:8px;border:1px solid #9FE870;background:#9FE870;box-shadow:0px 1px 2px 0px rgba(16, 24, 40, 0.05);cursor:pointer;margin-bottom:24px" target="_blank"><span><!--[if mso]><i style="letter-spacing: 24px;mso-font-width:-100%;mso-text-raise:15" hidden>&nbsp;</i><![endif]--></span><span style="max-width:100%;display:inline-block;line-height:120%;mso-padding-alt:0px;mso-text-raise:7.5px"><p style="font-size:16px;line-height:24px;margin:0;display:block;font-weight:600;width:100%;color:#000;letter-spacing:0.32px;white-space:nowrap">${buttonText}<span style="margin-left:6px">→</span></p></span><span><!--[if mso]><i style="letter-spacing: 24px;mso-font-width:-100%" hidden>&nbsp;</i><![endif]--></span></a></td>
                           </tr>
                         </tbody>
                       </table>
@@ -206,6 +220,7 @@ export function generateEmailTemplate(
                         </tr>
                       </tbody>
                     </table>
+                    ${downloadButtonBlock}
                   </td>
                 </tr>
               </tbody>
@@ -218,7 +233,7 @@ export function generateEmailTemplate(
       <tbody style="width:100%">
         <tr style="width:100%">
           <td align="center" data-id="__react-email-column">
-            <p style="font-size:14px;line-height:24px;margin:0 0 32px 0;color:#626C7F">DocuChain,<!-- --> <a href=${clientUrl} style="color:#626C7F;text-decoration:underline" target="_blank">DocuChain.io</a></p>
+            <p style="font-size:14px;line-height:24px;margin:0 0 32px 0;color:#626C7F"><a href=${clientUrl} style="color:#626C7F;text-decoration:underline" target="_blank">DocuChain.io</a></p>
           </td>
         </tr>
       </tbody>
