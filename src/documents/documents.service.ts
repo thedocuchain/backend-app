@@ -71,7 +71,6 @@ export class DocumentsService {
       Buffer.from(file?.originalname, 'latin1').toString('utf8') ?? filePath;
     const fileType = file?.mimetype ?? 'application/pdf';
     const imageType = 'image/png';
-    console.log('fileSize', fileSize); //TODO remove this line after testing
     try {
       await this.fileStorageService.save(filePath, file.buffer, [
         { filePath, contentType: file.mimetype },
@@ -468,7 +467,7 @@ export class DocumentsService {
 
       if (transactionHash) {
         document.status = DocumentStatuses.BLOCKCHAINED;
-        if (document.size < 2 * 1024 * 1024) {
+        if (document.size < 20 * 1024 * 1024) {
           await this.notificationsService.sendEmail(
             document,
             undefined,
