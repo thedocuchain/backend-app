@@ -1,7 +1,7 @@
 import '@ungap/with-resolvers';
 import * as fontkit from '@pdf-lib/fontkit';
 import { Injectable } from '@nestjs/common';
-import { PDFDocument, rgb } from 'pdf-lib';
+import { PDFDocument, rgb, StandardFonts } from 'pdf-lib';
 import { format } from 'date-fns';
 import {
   ICoords,
@@ -12,6 +12,10 @@ import {
 import { User } from '../database/entities/user.entity';
 import { FontUrls } from '../common/enums/fonts.enum';
 import { pdfToPng } from 'pdf-to-png-converter';
+import { ReadDocumentDto } from '../documents/dto/read-document.dto';
+import { AuditLog } from '../database/entities/auditLog.entity';
+import { formatDateString, sizeFormatter } from '../common/utils/format.util';
+import { UserRoles } from '../common/enums/entities.enum';
 
 @Injectable()
 export class PdfService {
@@ -303,5 +307,246 @@ export class PdfService {
     });
 
     return pngPage[0].content;
+  }
+
+  async generateAuditLogPdf(
+    document: ReadDocumentDto,
+    auditLogs: AuditLog[],
+    transactionHash: string,
+  ): Promise<Buffer> {
+    const pdfDoc = await PDFDocument.create();
+
+    let page = pdfDoc.addPage([595, 842]);
+    pdfDoc.registerFontkit(fontkit);
+
+    const helveticaFont = await pdfDoc.embedFont(StandardFonts.Helvetica);
+    const helveticaFontBold = await pdfDoc.embedFont(
+      StandardFonts.HelveticaBold,
+    );
+    const logoUrl = 'https://docuchain.io/app/assets/logo2.png';
+    const logoImageBytes = await fetch(logoUrl).then((res) =>
+      res.arrayBuffer(),
+    );
+    const logoImage = await pdfDoc.embedPng(logoImageBytes);
+
+    const logoFontSize = 18;
+    const titleFontSize = 12;
+    const fontSize = 10;
+
+    const leftX = 50;
+    const rightX = 200;
+
+    page.drawImage(logoImage, {
+      x: leftX,
+      y: 800,
+      width: 30,
+      height: 30,
+    });
+
+    page.drawText('DocuChain', {
+      x: leftX + 35,
+      y: 800,
+      size: logoFontSize,
+      font: helveticaFont,
+    });
+
+    page.drawText('Certificate of Completion', {
+      x: rightX + 130,
+      y: 800,
+      size: logoFontSize,
+      font: helveticaFont,
+    });
+
+    page.drawText(`Document ID: ${document.shortId}`, {
+      x: leftX,
+      y: 770,
+      size: titleFontSize,
+      font: helveticaFontBold,
+    });
+
+    page.drawLine({
+      start: { x: 30, y: 765 },
+      end: { x: 565, y: 765 },
+      thickness: 1,
+      color: rgb(0, 0, 0),
+    });
+
+    page.drawText(
+      `${document.name.endsWith('.pdf') ? document.name : document.name + '.pdf'}  ${sizeFormatter(document.size)}`,
+      { x: leftX, y: 750, size: fontSize, font: helveticaFontBold },
+    );
+
+    page.drawText('Original SHA256:', {
+      x: rightX,
+      y: 750,
+      size: fontSize,
+      font: helveticaFontBold,
+    });
+
+    page.drawText(`${document.originalHash}`, {
+      x: rightX,
+      y: 730,
+      size: fontSize,
+      font: helveticaFont,
+    });
+
+    page.drawText('Result SHA256:', {
+      x: rightX,
+      y: 710,
+      size: fontSize,
+      font: helveticaFontBold,
+    });
+
+    page.drawText(`${document.hash}`, {
+      x: rightX,
+      y: 690,
+      size: fontSize,
+      font: helveticaFont,
+    });
+
+    page.drawText('Blockchain tx:', {
+      x: rightX,
+      y: 670,
+      size: fontSize,
+      font: helveticaFontBold,
+    });
+
+    page.drawText(`${transactionHash}`, {
+      x: rightX,
+      y: 650,
+      size: fontSize,
+      font: helveticaFont,
+    });
+
+    page.drawText(`Generated at:`, {
+      x: rightX,
+      y: 630,
+      size: fontSize,
+      font: helveticaFontBold,
+    });
+
+    page.drawText(`${formatDateString(new Date())}`, {
+      x: rightX + 70,
+      y: 630,
+      size: fontSize,
+      font: helveticaFont,
+    });
+
+    page.drawLine({
+      start: { x: 30, y: 620 },
+      end: { x: 565, y: 620 },
+      thickness: 1,
+      color: rgb(0, 0, 0),
+    });
+
+    let yCord = 620;
+    const signers = document.users.filter(
+      (user) => user.role === UserRoles.SIGNER,
+    );
+
+    await Promise.all(
+      signers.map(async (user, index) => {
+        const signatureFontSize = user.signatures[0]?.fontSize ?? 22;
+        const signatureFont = user.signatures[0]?.signFont ?? 'allison-regular';
+        const signatureFontUrl = FontUrls[`${signatureFont}`];
+        const fontBytes = await fetch(signatureFontUrl).then((res) =>
+          res.arrayBuffer(),
+        );
+        const customFont = await pdfDoc.embedFont(fontBytes);
+        yCord = yCord - 15 - index * 90;
+
+        page.drawText(`${user.email}`, {
+          x: leftX,
+          y: yCord,
+          size: fontSize,
+          font: helveticaFontBold,
+        });
+
+        page.drawText(`User ID: ${user.id}`, {
+          x: leftX,
+          y: yCord - 20,
+          size: fontSize,
+          font: helveticaFont,
+        });
+
+        page.drawText(`IP: ${user.ip}`, {
+          x: leftX,
+          y: yCord - 40,
+          size: fontSize,
+          font: helveticaFont,
+        });
+
+        page.drawText(`User Agent: ${user.userAgent?.slice(0, -30)}`, {
+          x: leftX,
+          y: yCord - 60,
+          size: fontSize,
+          font: helveticaFont,
+        });
+
+        page.drawText('Signature:', {
+          x: leftX,
+          y: yCord - 80,
+          size: fontSize,
+          font: helveticaFont,
+        });
+
+        page.drawText(`${user.name}`, {
+          x: leftX + 50,
+          y: yCord - 80,
+          size: signatureFontSize,
+          font: customFont,
+        });
+
+        page.drawLine({
+          start: { x: 30, y: yCord - 90 },
+          end: { x: 565, y: yCord - 90 },
+          thickness: 1,
+          color: rgb(0, 0, 0),
+        });
+
+        // Check if a new page is needed
+        if (yCord - 100 < 0) {
+          pdfDoc.addPage([595, 842]);
+          yCord = 800;
+          page = pdfDoc.getPage(pdfDoc.getPages().length - 1);
+        }
+      }),
+    );
+
+    page.drawText('Event Log', {
+      x: leftX,
+      y: yCord - 110,
+      size: titleFontSize,
+      font: helveticaFontBold,
+    });
+
+    let yCord2 = yCord - 110;
+    await Promise.all(
+      auditLogs.map(async (auditLog) => {
+        yCord2 = yCord2 - 20;
+        page.drawText(`${formatDateString(auditLog.createdAt)}`, {
+          x: leftX,
+          y: yCord2,
+          size: fontSize,
+          font: helveticaFont,
+        });
+        const userEmail = document.users.find(
+          (user) => user.id === auditLog.userId,
+        )?.email;
+        page.drawText(`${auditLog.eventName} by ${userEmail}`, {
+          x: rightX,
+          y: yCord2,
+          size: fontSize,
+          font: helveticaFont,
+        });
+        if (yCord2 < 50) {
+          pdfDoc.addPage([595, 842]);
+          yCord2 = 800;
+          page = pdfDoc.getPage(pdfDoc.getPages().length - 1);
+        }
+      }),
+    );
+
+    return Buffer.from(await pdfDoc.save());
   }
 }
