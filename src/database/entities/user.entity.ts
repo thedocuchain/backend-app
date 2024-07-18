@@ -34,6 +34,12 @@ export class User {
   @Column('text', { nullable: true })
   checkSum: string;
 
+  @Column('text', { nullable: true })
+  userAgent: string;
+
+  @Column('text', { nullable: true })
+  ip: string;
+
   @CreateDateColumn()
   createdAt: Date;
 

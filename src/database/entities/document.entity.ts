@@ -27,6 +27,9 @@ export class Document {
   status: string;
 
   @Column('text', { nullable: true })
+  originalHash: string;
+
+  @Column('text', { nullable: true })
   hash: string;
 
   @Column('text', { nullable: true })

@@ -38,6 +38,12 @@ export class ReadDocumentDto {
     example: '91f775524508900f300ffff6872bb5f806398440',
   })
   @IsString()
+  originalHash: string;
+
+  @ApiProperty({
+    example: '91f775524508900f300ffff6872bb5f806398440',
+  })
+  @IsString()
   hash: string;
 
   @ApiProperty({
