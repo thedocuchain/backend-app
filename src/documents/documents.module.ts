@@ -11,6 +11,7 @@ import { NotificationsModule } from '../notifications/notifications.module';
 import { AuthModule } from '../auth/auth.module';
 import { EventsModule } from '../events/events.module';
 import { BlockchainModule } from '../blockchain/blockchain.module';
+import { AuditLogsModule } from '../audit-logs/audit-logs.module';
 
 @Module({
   imports: [
@@ -24,6 +25,7 @@ import { BlockchainModule } from '../blockchain/blockchain.module';
     EventsModule,
     AuthModule,
     BlockchainModule,
+    AuditLogsModule,
   ],
   controllers: [DocumentsController],
   providers: [DocumentsService],

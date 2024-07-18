@@ -26,3 +26,8 @@ export enum FileLinkTypes {
   DOWNLOAD = 'download',
   PDF = 'pdf',
 }
+
+export enum AuditLogEventTypes {
+  STARTED = 'signing process started',
+  COMPLETED = 'signing process completed',
+}
