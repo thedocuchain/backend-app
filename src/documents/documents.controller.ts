@@ -10,6 +10,7 @@ import {
   Body,
   UseGuards,
   Request,
+  Ip,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import {
@@ -140,8 +141,9 @@ export class DocumentsController {
     @Param('userId')
     userId: string,
     @Body() signDocumentDto: SignDocumentDto,
-    @Request() req: any,
+    @Request() req,
+    @Ip() ip: string,
   ) {
-    return this.documentsService.sign(id, userId, signDocumentDto, req?.user);
+    return this.documentsService.sign(id, userId, signDocumentDto, req, ip);
   }
 }

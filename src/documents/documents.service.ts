@@ -26,6 +26,7 @@ import { AddUsersDocumentDto } from './dto/add-users-document.dto';
 import { SignDocumentDto } from './dto/sign-document.dto';
 import { ReadDocumentDto } from './dto/read-document.dto';
 import {
+  AuditLogEventTypes,
   DocumentStatuses,
   FileLinkTypes,
   NotifyStatuses,
@@ -42,6 +43,7 @@ import { UpdateDocumentDto } from './dto/update-document.dto';
 import { EventsGateway } from '../events/events.gateway';
 import { AuthService } from '../auth/auth.service';
 import { BlockchainService } from '../blockchain/blockchain.service';
+import { AuditLogsService } from '../audit-logs/audit-logs.service';
 
 @Injectable()
 export class DocumentsService {
@@ -58,6 +60,7 @@ export class DocumentsService {
     private readonly eventsGateway: EventsGateway,
     private readonly authService: AuthService,
     private readonly blockchainService: BlockchainService,
+    private readonly auditLogsService: AuditLogsService,
     private readonly eventEmitter: EventEmitter2,
   ) {}
   public async upload(file: Express.Multer.File): Promise<UploadDocumentDto> {
@@ -84,12 +87,15 @@ export class DocumentsService {
       { filePath: imagePath, contentType: imageType },
     ]);
 
+    const originalHash = await this.getFileHash(file.buffer);
+
     const document = this.documentRepository.create({
       name: fileName,
       type: fileType,
       size: fileSize,
       fileStorageId: filePath,
       imageStorageId: imagePath,
+      originalHash,
       status: DocumentStatuses.UPLOADED,
       checkSum: hash(`${fileName}${fileType}${filePath}`),
     });
@@ -274,10 +280,20 @@ export class DocumentsService {
     id: string,
     userId: string,
     signature: SignDocumentDto,
-    requestUser: any,
+    request: any,
+    ip: string,
   ): Promise<void> {
+    const requestUser = request?.user;
+    const userAgent = request?.headers['user-agent'];
+
     await this.authService.checkAuthorization(userId, requestUser);
     const isTokenExpired = await this.authService.isExpired(requestUser);
+
+    await this.auditLogsService.createAuditLog(
+      requestUser.documentId,
+      requestUser.userId,
+      AuditLogEventTypes.STARTED,
+    );
 
     if (isTokenExpired) {
       await this.notify(requestUser.documentId, requestUser.userId);
@@ -323,6 +339,8 @@ export class DocumentsService {
       agreedWithPolicy: signature.agreedWithPolicy,
       readRecordsDisclosure: signature.readRecordsDisclosure,
       firstToHear: signature.firstToHear,
+      ip,
+      userAgent,
       signatures: [
         {
           ...user.signatures[0],
@@ -335,7 +353,6 @@ export class DocumentsService {
         },
       ],
     };
-
     let documentFileWithMetadata: FileStorage;
     let signedDocument: Buffer;
 
@@ -404,6 +421,8 @@ export class DocumentsService {
         agreedWithPolicy: signature.agreedWithPolicy,
         readRecordsDisclosure: signature.readRecordsDisclosure,
         firstToHear: signature.firstToHear,
+        ip,
+        userAgent,
       });
       await queryRunner.manager.update(
         Document,
@@ -419,6 +438,13 @@ export class DocumentsService {
     }
 
     const updatedDocument = await this.findOne(document.id);
+
+    await this.auditLogsService.createAuditLog(
+      document.id,
+      updatedUser.id,
+      AuditLogEventTypes.COMPLETED,
+    );
+
     if (
       updatedDocument.status === DocumentStatuses.DELIVERED ||
       updatedDocument.status === DocumentStatuses.PARTIALLY_SIGNED
@@ -464,6 +490,13 @@ export class DocumentsService {
       } finally {
         await queryRunner.release();
       }
+      const updatedDocument = await this.findOne(document.id);
+      const auditLogs = await this.auditLogsService.getAuditLogs(document.id);
+      const auditLogBuffer = await this.pdfService.generateAuditLogPdf(
+        updatedDocument,
+        auditLogs,
+        transactionHash,
+      );
 
       if (transactionHash) {
         document.status = DocumentStatuses.BLOCKCHAINED;
@@ -474,17 +507,24 @@ export class DocumentsService {
             updatedUser.name,
             transactionHash,
             attachedFile,
+            undefined,
+            auditLogBuffer,
           );
         } else {
           const downloadLink = await this.download(document.id);
-          await this.notificationsService.sendEmail(
-            document,
-            undefined,
-            updatedUser.name,
-            transactionHash,
-            undefined,
-            downloadLink.fileLink,
-          );
+          await this.notificationsService
+            .sendEmail(
+              document,
+              undefined,
+              updatedUser.name,
+              transactionHash,
+              undefined,
+              downloadLink.fileLink,
+              auditLogBuffer,
+            )
+            .catch((err) =>
+              console.error(`Error in sendEmail: ${err.message}`),
+            );
         }
       }
     } catch (error) {

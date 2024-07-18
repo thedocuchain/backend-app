@@ -45,6 +45,7 @@ export class NotificationsService {
     hash?: string,
     file?: Buffer | undefined,
     downloadLink?: string,
+    auditLogFile?: Buffer | undefined,
   ): Promise<void> {
     let users = document.users.filter(
       (user) =>
@@ -78,6 +79,26 @@ export class NotificationsService {
                 filename: `${document.name}`.endsWith('.pdf')
                   ? `${document.name}`
                   : `${document.name}.pdf`,
+                type: 'application/pdf',
+              },
+              {
+                data: auditLogFile,
+                filename: `Certificate of Completion.pdf`,
+                type: 'application/pdf',
+              },
+            ],
+          });
+        } else if (downloadLink) {
+          await this.mg.messages.create(this.domain, {
+            from: this.emailFrom,
+            to: [user.email],
+            'o:tag': [user.id, document.id],
+            subject,
+            html: template,
+            attachment: [
+              {
+                data: auditLogFile,
+                filename: `Certificate of Completion.pdf`,
                 type: 'application/pdf',
               },
             ],
