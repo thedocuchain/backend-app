@@ -33,7 +33,7 @@ export class BlockchainService {
         from,
         to: '0x0000000000000000000000000000000000000000',
         value: this.web3.utils.toWei('0.001', 'ether'),
-        data: this.web3.utils.asciiToHex(hash),
+        data: hash,
         gas: 4000000,
         gasPrice: increasedGasPrice,
         nonce,

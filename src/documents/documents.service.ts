@@ -87,7 +87,7 @@ export class DocumentsService {
       { filePath: imagePath, contentType: imageType },
     ]);
 
-    const originalHash = await this.getFileHash(file.buffer);
+    const originalDocumentHash = await this.getFileHash(file.buffer);
 
     const document = this.documentRepository.create({
       name: fileName,
@@ -95,7 +95,7 @@ export class DocumentsService {
       size: fileSize,
       fileStorageId: filePath,
       imageStorageId: imagePath,
-      originalHash,
+      originalHash: `0x${originalDocumentHash}`,
       status: DocumentStatuses.UPLOADED,
       checkSum: hash(`${fileName}${fileType}${filePath}`),
     });
@@ -396,7 +396,7 @@ export class DocumentsService {
       documentArguments.status = DocumentStatuses.COMPLETED;
       attachedFile = signedDocument;
       const documentHash = await this.getFileHash(signedDocument);
-      documentArguments.hash = documentHash;
+      documentArguments.hash = `0x${documentHash}`;
       this.eventEmitter.emit('document.hashed', {
         document,
         documentHash,
