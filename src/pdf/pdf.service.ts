@@ -323,7 +323,7 @@ export class PdfService {
     const helveticaFontBold = await pdfDoc.embedFont(
       StandardFonts.HelveticaBold,
     );
-    const logoUrl = 'https://docuchain.io/app/assets/logo2.png';
+    const logoUrl = 'https://docuchain.io/app/assets/logo-big.png';
     const logoImageBytes = await fetch(logoUrl).then((res) =>
       res.arrayBuffer(),
     );
@@ -338,7 +338,7 @@ export class PdfService {
 
     page.drawImage(logoImage, {
       x: leftX,
-      y: 800,
+      y: 792,
       width: 30,
       height: 30,
     });
@@ -504,7 +504,6 @@ export class PdfService {
           color: rgb(0, 0, 0),
         });
 
-        // Check if a new page is needed
         if (yCord - 100 < 0) {
           pdfDoc.addPage([595, 842]);
           yCord = 800;
