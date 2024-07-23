@@ -18,6 +18,7 @@ import { FeedbacksModule } from './feedbacks/feedbacks.module';
 import { EventEmitterModule } from '@nestjs/event-emitter';
 import { RecaptchaModule } from './recaptcha/recaptcha.module';
 import { AuditLogsModule } from './audit-logs/audit-logs.module';
+import { TransformFormatModule } from './transform-format/transform-format.module';
 
 @Module({
   imports: [
@@ -42,6 +43,7 @@ import { AuditLogsModule } from './audit-logs/audit-logs.module';
     FeedbacksModule,
     RecaptchaModule,
     AuditLogsModule,
+    TransformFormatModule,
   ],
   providers: [],
 })

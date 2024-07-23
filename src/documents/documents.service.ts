@@ -44,6 +44,7 @@ import { EventsGateway } from '../events/events.gateway';
 import { AuthService } from '../auth/auth.service';
 import { BlockchainService } from '../blockchain/blockchain.service';
 import { AuditLogsService } from '../audit-logs/audit-logs.service';
+import { TransformFormatService } from '../transform-format/transform-format.service';
 
 @Injectable()
 export class DocumentsService {
@@ -62,11 +63,19 @@ export class DocumentsService {
     private readonly blockchainService: BlockchainService,
     private readonly auditLogsService: AuditLogsService,
     private readonly eventEmitter: EventEmitter2,
+    private readonly transformFormatService: TransformFormatService,
   ) {}
   public async upload(file: Express.Multer.File): Promise<UploadDocumentDto> {
     if (!file) {
       throw new BadRequestException('File is required.');
     }
+
+    try {
+      file = await this.transformFormatService.transformToPdf(file);
+    } catch (error) {
+      throw new BadRequestException('Wrong file format.');
+    }
+
     const filePath = uuidV4();
     const fileSize = file.size;
     const imagePath = `${filePath}.png`;
