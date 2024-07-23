@@ -1,7 +1,7 @@
 import '@ungap/with-resolvers';
 import * as fontkit from '@pdf-lib/fontkit';
 import { Injectable } from '@nestjs/common';
-import { PDFDocument, rgb, StandardFonts } from 'pdf-lib';
+import { PDFDocument, PDFImage, rgb, StandardFonts } from 'pdf-lib';
 import { format } from 'date-fns';
 import {
   ICoords,
@@ -309,6 +309,32 @@ export class PdfService {
     return pngPage[0].content;
   }
 
+  async convertImageToPdf(file: Express.Multer.File): Promise<Buffer> {
+    const pdfDoc = await PDFDocument.create();
+    const page = pdfDoc.addPage([595, 842]);
+    const buf = file.buffer;
+    let image: PDFImage;
+    if (file?.mimetype && file.mimetype === 'image/png') {
+      image = await pdfDoc.embedPng(
+        buf.buffer.slice(buf.byteOffset, buf.byteOffset + buf.byteLength),
+      );
+    } else if (file.mimetype === 'image/jpeg') {
+      image = await pdfDoc.embedJpg(
+        buf.buffer.slice(buf.byteOffset, buf.byteOffset + buf.byteLength),
+      );
+    } else {
+      throw new Error('Unsupported image format');
+    }
+    page.drawImage(image, {
+      x: 0,
+      y: 0,
+      width: 595,
+      height: 842,
+    });
+
+    return Buffer.from(await pdfDoc.save());
+  }
+
   async generateAuditLogPdf(
     document: ReadDocumentDto,
     auditLogs: AuditLog[],
@@ -357,7 +383,7 @@ export class PdfService {
       font: helveticaFont,
     });
 
-    page.drawText(`Document ID: ${document.shortId}`, {
+    page.drawText(`Document ID: ${document.shortId.toUpperCase()}`, {
       x: leftX,
       y: 770,
       size: titleFontSize,
