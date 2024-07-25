@@ -24,28 +24,6 @@ services:
       - "3000:3000"
     depends_on:
       - db
-  metabase:
-    image: metabase/metabase:v0.50.15
-    container_name: metabase
-    hostname: metabase
-    environment:
-      - MB_DB_TYPE=postgres
-      - MB_DB_DBNAME=metabase
-      - MB_DB_PORT=5432
-      - MB_DB_USER=${DATABASE_USER}
-      - MB_DB_PASS=${DATABASE_PASSWORD}
-      - MB_DB_HOST=db
-    volumes:
-      - /dev/urandom:/dev/random:ro
-    ports:
-      - 127.0.0.1:3021:3000
-    depends_on:
-      - db
-    healthcheck:
-      test: curl --fail -I http://localhost:3000/api/health || exit 1
-      interval: 15s
-      timeout: 5s
-      retries: 5
 volumes:
   db:
     driver: local
