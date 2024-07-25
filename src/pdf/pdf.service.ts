@@ -217,11 +217,9 @@ export class PdfService {
     const signatureDate = format(user.signatures[0].signDate, 'MM.dd.yyyy');
     const page = user.signatures[0].pageNumber;
     const yCord = user.signatures[0].yCoordinate;
-    const signatureFontUrl =
-      FontUrls[`${signatureFontName}`] ?? FontUrls['italianno-regular'];
-    const fontBytes = await fetch(signatureFontUrl).then((res) =>
-      res.arrayBuffer(),
-    );
+
+    const fontBytes = await this.getFontBytes(signatureFontName);
+
     const customFont = await pdfDoc.embedFont(fontBytes);
     const defaultFont = await pdfDoc.embedFont('Helvetica');
     const signatureFontSize = user.signatures[0].fontSize ?? 20;
@@ -473,11 +471,9 @@ export class PdfService {
     await Promise.all(
       signers.map(async (user, index) => {
         const signatureFontSize = user.signatures[0]?.fontSize ?? 22;
-        const signatureFont = user.signatures[0]?.signFont ?? 'allison-regular';
-        const signatureFontUrl = FontUrls[`${signatureFont}`];
-        const fontBytes = await fetch(signatureFontUrl).then((res) =>
-          res.arrayBuffer(),
-        );
+        const signatureFont =
+          user.signatures[0]?.signFont ?? 'italianno-regular';
+        const fontBytes = await this.getFontBytes(signatureFont);
         const customFont = await pdfDoc.embedFont(fontBytes);
         yCord = yCord - 15 - index * 90;
 
@@ -573,5 +569,26 @@ export class PdfService {
     );
 
     return Buffer.from(await pdfDoc.save());
+  }
+
+  async getFontBytes(signatureFont: string): Promise<ArrayBuffer> {
+    let fontBytes: ArrayBuffer;
+    const signatureFontUrl =
+      FontUrls[`${signatureFont}`] ?? 'italianno-regular';
+    try {
+      fontBytes = await fetch(signatureFontUrl).then((res) =>
+        res.arrayBuffer(),
+      );
+    } catch (error) {
+      console.error(
+        'Error fetching the initial font, fetching from fallback font',
+        error,
+      );
+      fontBytes = await fetch(FontUrls['italianno-regular']).then((res) =>
+        res.arrayBuffer(),
+      );
+    }
+
+    return fontBytes;
   }
 }
