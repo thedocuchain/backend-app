@@ -99,4 +99,6 @@ export enum FontUrls {
   'waiting-for-the-sunrise-regular' = 'https://docuchain.io/app/fonts/WaitingfortheSunrise-Regular.ttf',
   'yellowtail-regular' = 'https://docuchain.io/app/fonts/Yellowtail-Regular.ttf',
   'zeyada-regular' = 'https://docuchain.io/app/fonts/Zeyada-Regular.ttf',
+  'default' = 'assets/fonts/open-sans.regular.ttf',
+  'defaultBold' = 'assets/fonts/open-sans.bold.ttf',
 }
