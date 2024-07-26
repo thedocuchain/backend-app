@@ -1,7 +1,7 @@
 import '@ungap/with-resolvers';
 import * as fontkit from '@pdf-lib/fontkit';
 import { Injectable } from '@nestjs/common';
-import { PDFDocument, PDFImage, rgb, StandardFonts } from 'pdf-lib';
+import { PDFDocument, PDFImage, rgb } from 'pdf-lib';
 import { format } from 'date-fns';
 import {
   ICoords,
@@ -16,6 +16,9 @@ import { ReadDocumentDto } from '../documents/dto/read-document.dto';
 import { AuditLog } from '../database/entities/auditLog.entity';
 import { formatDateString, sizeFormatter } from '../common/utils/format.util';
 import { UserRoles } from '../common/enums/entities.enum';
+import * as fs from 'node:fs';
+import * as path from 'node:path';
+import { isCyrillic } from '../common/utils/font.util';
 
 @Injectable()
 export class PdfService {
@@ -145,8 +148,11 @@ export class PdfService {
     pdfDoc: PDFDocument,
     pdfSettings: ICoords,
   ): Promise<PDFDocument> {
+    pdfDoc.registerFontkit(fontkit);
+
     const defaultFontSize = 14;
-    const defaultFont = await pdfDoc.embedFont('Helvetica');
+    const defaultFontBytes = await this.readDefaultFontBytes('default');
+    const defaultFont = await pdfDoc.embedFont(defaultFontBytes);
     const userEmailFormX = 50;
     const pageSize = pdfDoc.getPages()[0].getSize();
     const maxUsernameWidth = (pageSize.width - userEmailFormX) / 3;
@@ -218,10 +224,17 @@ export class PdfService {
     const page = user.signatures[0].pageNumber;
     const yCord = user.signatures[0].yCoordinate;
 
-    const fontBytes = await this.getFontBytes(signatureFontName);
+    let fontBytes = await this.fetchFontBytes(signatureFontName);
+
+    if (isCyrillic(username)) {
+      fontBytes = await this.fetchFontBytes('marck-script-regular');
+    }
 
     const customFont = await pdfDoc.embedFont(fontBytes);
-    const defaultFont = await pdfDoc.embedFont('Helvetica');
+
+    const defaultFontBytes = await this.readDefaultFontBytes('default');
+    const defaultFont = await pdfDoc.embedFont(defaultFontBytes);
+
     const signatureFontSize = user.signatures[0].fontSize ?? 20;
     const dateFontSize = 14;
 
@@ -343,10 +356,11 @@ export class PdfService {
     let page = pdfDoc.addPage([595, 842]);
     pdfDoc.registerFontkit(fontkit);
 
-    const helveticaFont = await pdfDoc.embedFont(StandardFonts.Helvetica);
-    const helveticaFontBold = await pdfDoc.embedFont(
-      StandardFonts.HelveticaBold,
-    );
+    const defaultFontBytes = await this.readDefaultFontBytes('default');
+    const defaultFont = await pdfDoc.embedFont(defaultFontBytes);
+    const defaultBoldFontBytes = await this.readDefaultFontBytes('defaultBold');
+    const defaultFontBold = await pdfDoc.embedFont(defaultBoldFontBytes);
+
     const logoUrl = 'https://docuchain.io/app/assets/logo-big.png';
     const logoImageBytes = await fetch(logoUrl).then((res) =>
       res.arrayBuffer(),
@@ -371,21 +385,21 @@ export class PdfService {
       x: leftX + 35,
       y: 800,
       size: logoFontSize,
-      font: helveticaFont,
+      font: defaultFont,
     });
 
     page.drawText('Certificate of Completion', {
       x: rightX + 130,
       y: 800,
       size: logoFontSize,
-      font: helveticaFont,
+      font: defaultFont,
     });
 
     page.drawText(`Document ID: ${document.shortId.toUpperCase()}`, {
       x: leftX,
       y: 770,
       size: titleFontSize,
-      font: helveticaFontBold,
+      font: defaultFontBold,
     });
 
     page.drawLine({
@@ -397,63 +411,63 @@ export class PdfService {
 
     page.drawText(
       `${document.name.endsWith('.pdf') ? document.name : document.name + '.pdf'}  ${sizeFormatter(document.size)}`,
-      { x: leftX, y: 750, size: fontSize, font: helveticaFontBold },
+      { x: leftX, y: 750, size: fontSize, font: defaultFontBold },
     );
 
     page.drawText('Original SHA256:', {
       x: rightX,
       y: 750,
       size: fontSize,
-      font: helveticaFontBold,
+      font: defaultFontBold,
     });
 
     page.drawText(`${document.originalHash}`, {
       x: rightX,
       y: 730,
       size: fontSize,
-      font: helveticaFont,
+      font: defaultFont,
     });
 
     page.drawText('Result SHA256:', {
       x: rightX,
       y: 710,
       size: fontSize,
-      font: helveticaFontBold,
+      font: defaultFontBold,
     });
 
     page.drawText(`${document.hash}`, {
       x: rightX,
       y: 690,
       size: fontSize,
-      font: helveticaFont,
+      font: defaultFont,
     });
 
     page.drawText('Blockchain tx:', {
       x: rightX,
       y: 670,
       size: fontSize,
-      font: helveticaFontBold,
+      font: defaultFontBold,
     });
 
     page.drawText(`${transactionHash}`, {
       x: rightX,
       y: 650,
       size: fontSize,
-      font: helveticaFont,
+      font: defaultFont,
     });
 
     page.drawText(`Generated at:`, {
       x: rightX,
       y: 630,
       size: fontSize,
-      font: helveticaFontBold,
+      font: defaultFontBold,
     });
 
     page.drawText(`${formatDateString(new Date())}`, {
       x: rightX + 70,
       y: 630,
       size: fontSize,
-      font: helveticaFont,
+      font: defaultFont,
     });
 
     page.drawLine({
@@ -473,7 +487,11 @@ export class PdfService {
         const signatureFontSize = user.signatures[0]?.fontSize ?? 22;
         const signatureFont =
           user.signatures[0]?.signFont ?? 'italianno-regular';
-        const fontBytes = await this.getFontBytes(signatureFont);
+        let fontBytes = await this.fetchFontBytes(signatureFont);
+
+        if (isCyrillic(user.name)) {
+          fontBytes = await this.fetchFontBytes('marck-script-regular');
+        }
         const customFont = await pdfDoc.embedFont(fontBytes);
         yCord = yCord - 15 - index * 90;
 
@@ -481,35 +499,35 @@ export class PdfService {
           x: leftX,
           y: yCord,
           size: fontSize,
-          font: helveticaFontBold,
+          font: defaultFontBold,
         });
 
         page.drawText(`User ID: ${user.id}`, {
           x: leftX,
           y: yCord - 20,
           size: fontSize,
-          font: helveticaFont,
+          font: defaultFont,
         });
 
         page.drawText(`IP: ${user.ip}`, {
           x: leftX,
           y: yCord - 40,
           size: fontSize,
-          font: helveticaFont,
+          font: defaultFont,
         });
 
         page.drawText(`User Agent: ${user.userAgent?.slice(0, -30)}`, {
           x: leftX,
           y: yCord - 60,
           size: fontSize,
-          font: helveticaFont,
+          font: defaultFont,
         });
 
         page.drawText('Signature:', {
           x: leftX,
           y: yCord - 80,
           size: fontSize,
-          font: helveticaFont,
+          font: defaultFont,
         });
 
         page.drawText(`${user.name}`, {
@@ -538,7 +556,7 @@ export class PdfService {
       x: leftX,
       y: yCord - 110,
       size: titleFontSize,
-      font: helveticaFontBold,
+      font: defaultFontBold,
     });
 
     let yCord2 = yCord - 110;
@@ -549,7 +567,7 @@ export class PdfService {
           x: leftX,
           y: yCord2,
           size: fontSize,
-          font: helveticaFont,
+          font: defaultFont,
         });
         const userEmail = document.users.find(
           (user) => user.id === auditLog.userId,
@@ -558,7 +576,7 @@ export class PdfService {
           x: rightX,
           y: yCord2,
           size: fontSize,
-          font: helveticaFont,
+          font: defaultFont,
         });
         if (yCord2 < 50) {
           pdfDoc.addPage([595, 842]);
@@ -571,7 +589,7 @@ export class PdfService {
     return Buffer.from(await pdfDoc.save());
   }
 
-  async getFontBytes(signatureFont: string): Promise<ArrayBuffer> {
+  async fetchFontBytes(signatureFont: string): Promise<ArrayBuffer> {
     let fontBytes: ArrayBuffer;
     const signatureFontUrl =
       FontUrls[`${signatureFont}`] ?? 'italianno-regular';
@@ -590,5 +608,21 @@ export class PdfService {
     }
 
     return fontBytes;
+  }
+
+  async readDefaultFontBytes(signatureFont: string): Promise<ArrayBuffer> {
+    let defaultFontBytes: ArrayBuffer;
+    const defaultFontPath = FontUrls[`${signatureFont}`] ?? FontUrls['default'];
+
+    try {
+      const filePath = path.join(__dirname, '..', defaultFontPath);
+      defaultFontBytes = fs.readFileSync(filePath);
+    } catch (error) {
+      console.error(
+        'Error fetching the initial font, fetching from fallback font',
+        error,
+      );
+    }
+    return defaultFontBytes;
   }
 }
