@@ -7,6 +7,7 @@ import {
 import { ValidationPipe, VersioningType } from '@nestjs/common';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import * as bodyParser from 'body-parser';
+import helmet from 'helmet';
 
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(
@@ -27,6 +28,7 @@ async function bootstrap() {
     defaultVersion: '1',
   });
 
+  app.use(helmet());
   app.enableCors();
 
   if (process.env.NODE_ENV !== 'production') {
