@@ -49,6 +49,7 @@
     "hi-base32": "^0.5.1",
     "libreoffice-convert": "^1.6.0",
     "mailgun.js": "^10.2.1",
+    "nest-winston": "^1.9.7",
     "passport": "^0.7.0",
     "passport-jwt": "^4.0.1",
     "pdf-lib": "^1.17.1",
@@ -59,7 +60,8 @@
     "rxjs": "^7.8.1",
     "typeorm": "0.3.20",
     "uuid": "^9.0.1",
-    "web3": "^4.10.0"
+    "web3": "^4.10.0",
+    "winston": "^3.13.1"
   },
   "devDependencies": {
     "@nestjs/cli": "^10.0.0",
