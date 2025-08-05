@@ -1,6 +1,14 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsArray, IsNotEmpty, IsString, ValidateNested } from 'class-validator';
+import {
+  IsArray,
+  IsNotEmpty,
+  IsString,
+  ValidateNested,
+  IsOptional,
+  IsEnum,
+} from 'class-validator';
 import { ReadUserDto } from '../../users/dto/read-user.dto';
+import { BlockchainTypes } from '../../common/enums/entities.enum';
 
 export class AddUsersDocumentDto {
   @ApiProperty({
@@ -29,4 +37,14 @@ export class AddUsersDocumentDto {
   @IsArray()
   @ValidateNested()
   readonly users: ReadUserDto[];
+
+  @ApiProperty({
+    enum: BlockchainTypes,
+    default: BlockchainTypes.POLYGON,
+    required: false,
+    description: 'Blockchain network to use for document verification',
+  })
+  @IsOptional()
+  @IsEnum(BlockchainTypes)
+  readonly blockchain: string = BlockchainTypes.POLYGON;
 }

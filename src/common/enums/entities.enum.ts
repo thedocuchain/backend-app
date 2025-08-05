@@ -27,6 +27,11 @@ export enum FileLinkTypes {
   PDF = 'pdf',
 }
 
+export enum BlockchainTypes {
+  POLYGON = 'polygon',
+  BSC = 'bsc',
+}
+
 export enum AuditLogEventTypes {
   STARTED = 'signing process started',
   COMPLETED = 'signing process completed',

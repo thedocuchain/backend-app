@@ -3,112 +3,179 @@ import {
   InternalServerErrorException,
   Logger,
 } from '@nestjs/common';
-import Web3 from 'web3';
+import Web3, { Web3BaseWalletAccount } from 'web3';
 import { ConfigService } from '@nestjs/config';
+import { BlockchainTypes } from '../common/enums/entities.enum';
+import { BlockchainConfigService } from './config/blockchain.config';
+import { BlockchainConfig } from './interfaces/blockchain-config.interface';
+
+interface BlockchainInstance {
+  web3: Web3;
+  account: Web3BaseWalletAccount;
+  currentNodeIndex: number;
+  config: BlockchainConfig;
+}
 
 @Injectable()
 export class BlockchainService {
   private readonly logger = new Logger(BlockchainService.name);
-  private readonly polygonRpcUrl: string;
-  private readonly polygonRpcUrlAnc: string;
-  private readonly polygonRpcUrlBor: string;
-  private readonly polygonRpcUrls: string[];
-  private readonly privateKey: string;
-  private account: any;
-  private currentNodeIndex: number;
-  private web3: Web3;
+  private readonly blockchainInstances: Map<string, BlockchainInstance> =
+    new Map();
 
-  constructor(private readonly configService: ConfigService) {
-    this.polygonRpcUrl = configService.get<string>('POLYGON_RPC_NODE');
-    this.polygonRpcUrlAnc = configService.get<string>('POLYGON_RPC_NODE_ANC');
-    this.polygonRpcUrlBor = configService.get<string>('POLYGON_RPC_NODE_BOR');
-    this.privateKey = configService.get<string>('MATIC_PRIVATE_KEY');
-    this.currentNodeIndex = 0;
-    this.polygonRpcUrls = [
-      this.polygonRpcUrl,
-      this.polygonRpcUrlAnc,
-      this.polygonRpcUrlBor,
-    ];
+  constructor(
+    private readonly configService: ConfigService,
+    private readonly blockchainConfigService: BlockchainConfigService,
+  ) {
+    this.initializeBlockchains();
+  }
 
-    if (!this.privateKey) {
-      throw new Error('No Polygon private key provided.');
+  private initializeBlockchains(): void {
+    const supportedBlockchains =
+      this.blockchainConfigService.getSupportedBlockchains();
+
+    for (const blockchain of supportedBlockchains) {
+      try {
+        const config = this.blockchainConfigService.getConfig(blockchain);
+        this.initializeBlockchain(blockchain, config);
+      } catch (error) {
+        this.logger.warn(
+          `Failed to initialize ${blockchain}: ${error.message}`,
+        );
+      }
     }
 
-    this.initializeWeb3();
+    if (this.blockchainInstances.size === 0) {
+      throw new Error('No blockchain networks could be initialized');
+    }
   }
 
-  private initializeWeb3() {
-    this.web3 = new Web3(
-      new Web3.providers.HttpProvider(
-        this.polygonRpcUrls[this.currentNodeIndex],
-      ),
-    );
-    this.account = this.web3.eth.accounts.privateKeyToAccount(this.privateKey);
-    this.web3.eth.accounts.wallet.add(this.account);
+  private initializeBlockchain(
+    blockchain: string,
+    config: BlockchainConfig,
+  ): void {
+    const web3 = new Web3(new Web3.providers.HttpProvider(config.rpcUrls[0]));
+
+    const account = web3.eth.accounts.privateKeyToAccount(config.privateKey);
+    web3.eth.accounts.wallet.add(account);
+
+    const instance: BlockchainInstance = {
+      web3,
+      account,
+      currentNodeIndex: 0,
+      config,
+    };
+
+    this.blockchainInstances.set(blockchain, instance);
+    this.logger.log(`Initialized ${blockchain} blockchain`);
   }
 
-  private async isNodeAvailable(): Promise<boolean> {
+  private getBlockchainInstance(blockchain: string): BlockchainInstance {
+    const instance = this.blockchainInstances.get(blockchain);
+    if (!instance) {
+      throw new Error(`Blockchain ${blockchain} is not initialized`);
+    }
+    return instance;
+  }
+
+  private async isNodeAvailable(blockchain: string): Promise<boolean> {
+    const instance = this.getBlockchainInstance(blockchain);
     this.logger.log(
-      `Connected to Polygon node: ${this.polygonRpcUrls[this.currentNodeIndex]}`,
+      `Connected to ${blockchain} node: ${instance.config.rpcUrls[instance.currentNodeIndex]}`,
     );
+
     try {
-      await this.web3.eth.net.isListening();
+      await instance.web3.eth.net.isListening();
       return true;
     } catch (error) {
       return false;
     }
   }
 
-  private switchNode() {
-    this.currentNodeIndex =
-      (this.currentNodeIndex + 1) % this.polygonRpcUrls.length;
-    this.initializeWeb3();
+  private switchNode(blockchain: string): void {
+    const instance = this.getBlockchainInstance(blockchain);
+    const { config } = instance;
+
+    instance.currentNodeIndex =
+      (instance.currentNodeIndex + 1) % config.rpcUrls.length;
+
+    instance.web3 = new Web3(
+      new Web3.providers.HttpProvider(
+        config.rpcUrls[instance.currentNodeIndex],
+      ),
+    );
+
+    instance.account = instance.web3.eth.accounts.privateKeyToAccount(
+      config.privateKey,
+    );
+    instance.web3.eth.accounts.wallet.add(instance.account);
+
     this.logger.warn(
-      `Switched to node: ${this.polygonRpcUrls[this.currentNodeIndex]}`,
+      `Switched ${blockchain} to node: ${config.rpcUrls[instance.currentNodeIndex]}`,
     );
   }
 
-  private async ensureNodeAvailability() {
-    if (!(await this.isNodeAvailable())) {
+  private async ensureNodeAvailability(blockchain: string): Promise<void> {
+    if (!(await this.isNodeAvailable(blockchain))) {
+      const instance = this.getBlockchainInstance(blockchain);
       this.logger.warn(
-        `Node ${this.polygonRpcUrls[this.currentNodeIndex]} is down. Switching nodes.`,
+        `Node ${instance.config.rpcUrls[instance.currentNodeIndex]} is down. Switching nodes.`,
       );
-      this.switchNode();
-      if (!(await this.isNodeAvailable())) {
+
+      this.switchNode(blockchain);
+
+      if (!(await this.isNodeAvailable(blockchain))) {
         throw new InternalServerErrorException(
-          'All Polygon nodes are unavailable.',
+          `All ${blockchain} nodes are unavailable.`,
         );
       }
     }
   }
 
-  async sendHash(hash: string): Promise<string> {
-    await this.ensureNodeAvailability();
+  async sendHash(
+    hash: string,
+    blockchain: string = BlockchainTypes.POLYGON,
+  ): Promise<string> {
+    await this.ensureNodeAvailability(blockchain);
+
     try {
-      const from = this.account.address;
-      let gasPrice = await this.web3.eth.getGasPrice();
+      const instance = this.getBlockchainInstance(blockchain);
+      const { web3, account, config } = instance;
+
+      const from = account.address;
+      let gasPrice = await web3.eth.getGasPrice();
       gasPrice = BigInt(gasPrice);
-      const increasedGasPrice = (gasPrice * 140n) / 100n;
-      const nonce = await this.web3.eth.getTransactionCount(from);
+      const increasedGasPrice =
+        (gasPrice * BigInt(config.gasPriceMultiplier)) / 100n;
+      const nonce = await web3.eth.getTransactionCount(from);
+
       const tx = {
         from,
         to: '0x0000000000000000000000000000000000000000',
-        value: this.web3.utils.toWei('0.001', 'ether'),
+        value: web3.utils.toWei(config.transactionValue, 'ether'),
         data: hash,
-        gas: 4000000,
+        gas: config.gasLimit,
         gasPrice: increasedGasPrice,
         nonce,
-        chainId: 137,
+        chainId: config.chainId,
       };
 
-      const signedTransaction = await this.account.signTransaction(tx);
-      const receipt = await this.web3.eth.sendSignedTransaction(
+      const signedTransaction = await account.signTransaction(tx);
+      const receipt = await web3.eth.sendSignedTransaction(
         signedTransaction.rawTransaction as string,
+      );
+
+      this.logger.log(
+        `Transaction sent on ${blockchain}: ${receipt.transactionHash}`,
       );
       return receipt.transactionHash.toString();
     } catch (error) {
-      this.logger.error('Error sending transaction', error.stack);
-      throw new InternalServerErrorException('Failed to send transaction');
+      this.logger.error(
+        `Error sending transaction on ${blockchain}`,
+        error.stack,
+      );
+      throw new InternalServerErrorException(
+        `Failed to send transaction on ${blockchain}`,
+      );
     }
   }
 }

@@ -1,5 +1,9 @@
 import { User } from '../../database/entities/user.entity';
-import { DocumentStatuses, UserRoles } from '../enums/entities.enum';
+import {
+  BlockchainTypes,
+  DocumentStatuses,
+  UserRoles,
+} from '../enums/entities.enum';
 import { ReadDocumentDto } from '../../documents/dto/read-document.dto';
 
 export function generateEmailTemplate(
@@ -12,6 +16,7 @@ export function generateEmailTemplate(
 ): { subject: string; preview: string; template: string } {
   const clientUrl = 'https://docuchain.io';
   const polygonUrl = `https://polygonscan.com/tx/${hash}`;
+  const bscUrl = `https://bscscan.com/tx/${hash}`;
   const appUrl = 'https://docuchain.io/app';
   const logoUrl = 'https://docuchain.io/app/assets/logo.png';
   const imageLink = document.imageLink;
@@ -80,11 +85,16 @@ export function generateEmailTemplate(
   const isDownloadButtonBlock = !!downloadLink;
   let downloadButtonBlock = '';
 
+  console.log(link);
   if (hash) {
     hashBlock = `<table align="left" width="100%" border="0" cellPadding="0" cellSpacing="0" role="presentation" style="margin-bottom:9px">
                       <tbody style="width:100%">
                         <tr style="width:100%">
-                          <p style="font-size:14px;line-height:20px;margin:0;color:#626C7F;font-weight:700;letter-spacing:0.28px">The document hash: <a href=${polygonUrl} style="color:#067df7;text-decoration:underline;text-decoration-color: #626C7F" target="_blank"><span style="word-break:break-all;line-height:20px;margin:0;color:#626C7F;font-size:14px;font-weight:700;letter-spacing:0.28px">${hash}</a></p>
+                          <p style="font-size:14px;line-height:20px;margin:0;color:#626C7F;font-weight:700;letter-spacing:0.28px">The document hash: <a href=${
+                            document.blockchain === BlockchainTypes.POLYGON
+                              ? polygonUrl
+                              : bscUrl
+                          } style="color:#067df7;text-decoration:underline;text-decoration-color: #626C7F" target="_blank"><span style="word-break:break-all;line-height:20px;margin:0;color:#626C7F;font-size:14px;font-weight:700;letter-spacing:0.28px">${hash}</a></p>
                           <p style="font-size:14px;line-height:20px;margin:0;color:#626C7F;letter-spacing:0.28px">Your document is securely stored on the blockchain forever and fully protected. You can always check if it has changed since signing.</p>
                         </tr>
                       </tbody>

@@ -6,7 +6,10 @@ import {
   IsUUID,
 } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
-import { DocumentStatuses } from '../../common/enums/entities.enum';
+import {
+  BlockchainTypes,
+  DocumentStatuses,
+} from '../../common/enums/entities.enum';
 import { User } from '../../database/entities/user.entity';
 
 export class ReadDocumentDto {
@@ -51,6 +54,12 @@ export class ReadDocumentDto {
   })
   @IsString()
   blockchainTransaction: string;
+
+  @ApiProperty({
+    example: BlockchainTypes.POLYGON,
+  })
+  @IsString()
+  blockchain: string;
 
   @ApiProperty({
     example: 'fc027ff1-5e94-4933-9875-78d1b8a9676f',
