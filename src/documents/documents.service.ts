@@ -27,6 +27,7 @@ import { SignDocumentDto } from './dto/sign-document.dto';
 import { ReadDocumentDto } from './dto/read-document.dto';
 import {
   AuditLogEventTypes,
+  BlockchainTypes,
   DocumentStatuses,
   FileLinkTypes,
   NotifyStatuses,
@@ -131,6 +132,7 @@ export class DocumentsService {
   ): Promise<void> {
     const documentName = updateDocumentDto.name;
     const users = updateDocumentDto?.users;
+    const blockchain = updateDocumentDto.blockchain;
     const document = await this.documentRepository
       .createQueryBuilder('document')
       .leftJoinAndSelect('document.users', 'user')
@@ -167,6 +169,7 @@ export class DocumentsService {
     await this.update(id, {
       name: documentName,
       status: DocumentStatuses.RECIPIENT_ADDED,
+      blockchain: blockchain,
     });
 
     const updatedDocument = await this.findOne(id);
@@ -476,7 +479,10 @@ export class DocumentsService {
     attachedFile,
   }): Promise<void> {
     try {
-      const transactionHash = await this.blockchainSendHash(documentHash);
+      const transactionHash = await this.blockchainSendHash(
+        documentHash,
+        document.blockchain,
+      );
       const documentArguments = {
         status: transactionHash
           ? DocumentStatuses.BLOCKCHAINED
@@ -566,7 +572,7 @@ export class DocumentsService {
     id: string,
     subscribeDocumentDto: SubscribeDocumentDto,
   ): Promise<void> {
-    const document = await this.findOne(id);
+    const document = await this.documentRepository.findOneBy({ id });
     if (!document) {
       throw new BadRequestException('Document is not found.');
     }
@@ -628,7 +634,10 @@ export class DocumentsService {
     }
   }
 
-  async blockchainSendHash(hash: string): Promise<string> {
-    return await this.blockchainService.sendHash(hash);
+  async blockchainSendHash(
+    hash: string,
+    blockchain: string = BlockchainTypes.POLYGON,
+  ): Promise<string> {
+    return await this.blockchainService.sendHash(hash, blockchain);
   }
 }

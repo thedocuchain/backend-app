@@ -7,7 +7,10 @@ import {
   OneToMany,
 } from 'typeorm';
 import { User } from './user.entity';
-import { DocumentStatuses } from '../../common/enums/entities.enum';
+import {
+  DocumentStatuses,
+  BlockchainTypes,
+} from '../../common/enums/entities.enum';
 
 @Entity()
 export class Document {
@@ -34,6 +37,13 @@ export class Document {
 
   @Column('text', { nullable: true })
   blockchainTransaction: string;
+
+  @Column({
+    type: 'text',
+    default: BlockchainTypes.POLYGON,
+    nullable: true,
+  })
+  blockchain: string;
 
   @Column('text')
   fileStorageId: string;
