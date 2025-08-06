@@ -35,10 +35,10 @@ jobs:
         JWT_SECRET: ${{ secrets.JWT_SECRET }}
         MATIC_PRIVATE_KEY: ${{ secrets.MATIC_PRIVATE_KEY }}
         POLYGON_RPC_NODE: ${{ secrets.POLYGON_RPC_NODE }}
-        BSC_RPC_NODE: ${{ secrets.BSC_RPC_NODE || 'test' }}
-        BSC_RPC_NODE_ANC: ${{ secrets.BSC_RPC_NODE_ANC || 'test' }}
-        BSC_RPC_NODE_DEFI: ${{ secrets.BSC_RPC_NODE_DEFI || 'test' }}
-        BSC_PRIVATE_KEY: ${{ secrets.BSC_PRIVATE_KEY || 'test' }}
+        BSC_RPC_NODE: ${{ secrets.BSC_RPC_NODE }}
+        BSC_RPC_NODE_ANC: ${{ secrets.BSC_RPC_NODE_ANC }}
+        BSC_RPC_NODE_DEFI: ${{ secrets.BSC_RPC_NODE_DEFI }}
+        BSC_PRIVATE_KEY: ${{ secrets.BSC_PRIVATE_KEY }}
         TG_BOT_TOKEN: ${{ secrets.TG_BOT_TOKEN }}
         TG_CHAT_ID: ${{ secrets.TG_CHAT_ID }}
         RECAPTCHA_SECRET_KEY: ${{ secrets.RECAPTCHA_SECRET_KEY }}
