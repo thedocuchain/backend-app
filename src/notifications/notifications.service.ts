@@ -71,6 +71,12 @@ export class NotificationsService {
             from: this.emailFrom,
             to: [user.email],
             'o:tag': [user.id, document.id],
+            'o:dkim': 'yes',
+            'o:testmode': false,
+            'h:X-Mailgun-Variables': JSON.stringify({
+              user_id: user.id,
+              document_id: document.id,
+            }),
             subject,
             html: template,
             attachment: [
@@ -93,6 +99,12 @@ export class NotificationsService {
             from: this.emailFrom,
             to: [user.email],
             'o:tag': [user.id, document.id],
+            'o:dkim': 'yes',
+            'o:testmode': false,
+            'h:X-Mailgun-Variables': JSON.stringify({
+              user_id: user.id,
+              document_id: document.id,
+            }),
             subject,
             html: template,
             attachment: [
@@ -108,6 +120,12 @@ export class NotificationsService {
             from: this.emailFrom,
             to: [user.email],
             'o:tag': [user.id, document.id],
+            'o:dkim': 'yes',
+            'o:testmode': false,
+            'h:X-Mailgun-Variables': JSON.stringify({
+              user_id: user.id,
+              document_id: document.id,
+            }),
             subject,
             html: template,
           });
