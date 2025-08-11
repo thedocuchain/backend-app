@@ -21,11 +21,11 @@ export function generateEmailTemplate(
   const logoUrl = 'https://docuchain.io/app/assets/logo.png';
   const imageLink = document.imageLink;
   const expiredAtTwoDays = Date.now() + 2 * 24 * 3600 * 1000;
-  let reminder = `You have ${document.name} to review and sign in DocuChain`;
+  let reminder = `You have ${document.name} to review in DocuChain`;
   let actualStatus = 'in progress';
-  let buttonText = 'Review and Sign';
-  let subject = `Document for signature: ${document.name}`;
-  let preview = `You have ${document.name} to review and sign in DocuChain`;
+  let buttonText = 'Open document';
+  let subject = `Document to review: ${document.name}`;
+  let preview = `You have ${document.name} to review in DocuChain`;
   let link = `${appUrl}/doc/sign/${document.id}?userId=${user.id}&token=${token}&expiredAt=${expiredAtTwoDays}`;
   let imageBackgroundStyle =
     'linear-gradient(180deg, rgba(255,255,255,0) 0%, rgba(255,255,255,1) 100%)';
