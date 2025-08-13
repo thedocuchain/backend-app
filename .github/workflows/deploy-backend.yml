@@ -39,6 +39,10 @@ jobs:
         BSC_RPC_NODE_ANC: ${{ secrets.BSC_RPC_NODE_ANC }}
         BSC_RPC_NODE_DEFI: ${{ secrets.BSC_RPC_NODE_DEFI }}
         BSC_PRIVATE_KEY: ${{ secrets.BSC_PRIVATE_KEY }}
+        SOLANA_RPC_NODE: ${{ secrets.SOLANA_RPC_NODE }}
+        SOLANA_RPC_NODE_ANC: ${{ secrets.SOLANA_RPC_NODE_ANC }}
+        SOLANA_PRIVATE_KEY: ${{ secrets.SOLANA_PRIVATE_KEY }}
+        SOLANA_CLUSTER: ${{ secrets.SOLANA_CLUSTER }}
         TG_BOT_TOKEN: ${{ secrets.TG_BOT_TOKEN }}
         TG_CHAT_ID: ${{ secrets.TG_CHAT_ID }}
         RECAPTCHA_SECRET_KEY: ${{ secrets.RECAPTCHA_SECRET_KEY }}
