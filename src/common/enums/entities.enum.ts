@@ -30,6 +30,7 @@ export enum FileLinkTypes {
 export enum BlockchainTypes {
   POLYGON = 'polygon',
   BSC = 'bsc',
+  SOLANA = 'solana',
 }
 
 export enum AuditLogEventTypes {

@@ -40,6 +40,16 @@ export class BlockchainConfigService {
         gasLimit: 4000000,
         gasPriceMultiplier: 140,
       },
+      [BlockchainTypes.SOLANA]: {
+        rpcUrls: [
+          this.configService.get<string>('SOLANA_RPC_NODE'),
+          this.configService.get<string>('SOLANA_RPC_NODE_ANC'),
+        ].filter(Boolean),
+        privateKey: this.configService.get<string>('SOLANA_PRIVATE_KEY'),
+        transactionValue: '0.000005',
+        cluster:
+          this.configService.get<string>('SOLANA_CLUSTER') || 'mainnet-beta',
+      },
     };
   }
 
@@ -55,8 +65,14 @@ export class BlockchainConfigService {
       );
     }
 
-    if (!config.rpcUrls.length) {
-      throw new Error(`No RPC URLs configured for blockchain: ${blockchain}`);
+    if (blockchain === BlockchainTypes.SOLANA) {
+      if (!config.rpcUrls.length && !config.cluster) {
+        throw new Error(`No RPC URLs or cluster configured for Solana`);
+      }
+    } else {
+      if (!config.rpcUrls.length) {
+        throw new Error(`No RPC URLs configured for blockchain: ${blockchain}`);
+      }
     }
 
     return config;

@@ -1,10 +1,11 @@
 export interface BlockchainConfig {
   rpcUrls: string[];
   privateKey: string;
-  chainId: number;
+  chainId?: number;
   transactionValue: string;
-  gasLimit: number;
-  gasPriceMultiplier: number;
+  gasLimit?: number;
+  gasPriceMultiplier?: number;
+  cluster?: string;
 }
 
 export interface BlockchainConfigs {
