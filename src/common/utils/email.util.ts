@@ -6,6 +6,19 @@ import {
 } from '../enums/entities.enum';
 import { ReadDocumentDto } from '../../documents/dto/read-document.dto';
 
+function getBlockchainExplorerUrl(
+  blockchain: BlockchainTypes,
+  hash: string,
+): string {
+  const explorerUrls = {
+    [BlockchainTypes.POLYGON]: `https://polygonscan.com/tx/${hash}`,
+    [BlockchainTypes.BSC]: `https://bscscan.com/tx/${hash}`,
+    [BlockchainTypes.SOLANA]: `https://solscan.io/tx/${hash}`,
+  };
+
+  return explorerUrls[blockchain];
+}
+
 export function generateEmailTemplate(
   document: ReadDocumentDto,
   user: User,
@@ -15,9 +28,6 @@ export function generateEmailTemplate(
   downloadLink?: string,
 ): { subject: string; preview: string; template: string } {
   const clientUrl = 'https://docuchain.io';
-  const polygonUrl = `https://polygonscan.com/tx/${hash}`;
-  const bscUrl = `https://bscscan.com/tx/${hash}`;
-  const solanaUrl = `https://solscan.io/tx/${hash}`;
   const appUrl = 'https://docuchain.io/app';
   const logoUrl = 'https://docuchain.io/app/assets/logo.png';
   const imageLink = document.imageLink;
@@ -25,22 +35,22 @@ export function generateEmailTemplate(
   let reminder = `You have ${document.name} to review in DocuChain`;
   let actualStatus = 'in progress';
   let buttonText = 'Open document';
-  let subject = `Document to review: ${document.name}`;
+  let subject = 'New document to review';
   let preview = `You have ${document.name} to review in DocuChain`;
   let link = `${appUrl}/doc/sign/${document.id}?userId=${user.id}&token=${token}&expiredAt=${expiredAtTwoDays}`;
   let imageBackgroundStyle =
     'linear-gradient(180deg, rgba(255,255,255,0) 0%, rgba(255,255,255,1) 100%)';
 
   if (user.role === UserRoles.WATCHER) {
-    subject = `Document tracking notification: ${document.name}`;
+    subject = `Document tracking notification`;
     preview = `You have been assigned as a Watcher of ${document.name}`;
     link = `${appUrl}/doc/status/${document.id}?token=${token}&expiredAt=${expiredAtTwoDays}`;
     buttonText = 'View status';
-    reminder = `You have been assigned to track document: ${document.name}`;
+    reminder = `You have been assigned to track document`;
   }
 
   if (document.status === DocumentStatuses.PARTIALLY_SIGNED && signerName) {
-    subject = `Document signing update: ${document.name}`;
+    subject = `Document signing update`;
     preview = `${signerName} has signed ${document.name}`;
     reminder = `${signerName} has signed the document: ${document.name}`;
   }
@@ -49,7 +59,7 @@ export function generateEmailTemplate(
     document.status === DocumentStatuses.COMPLETED ||
     document.status === DocumentStatuses.BLOCKCHAINED
   ) {
-    subject = `Completed: ${document.name}`;
+    subject = `All signers completed`;
     preview = `🎉 All signers completed with ${document.name}`;
     link = `${appUrl}/doc/status/${document.id}?token=${token}&expiredAt=${expiredAtTwoDays}&success=true`;
     reminder = `🎉 All signers completed with <!-- -->${document.name}`;
@@ -86,13 +96,11 @@ export function generateEmailTemplate(
   const isDownloadButtonBlock = !!downloadLink;
   let downloadButtonBlock = '';
 
-  if (hash) {
-    let explorerUrl = polygonUrl;
-    if (document.blockchain === BlockchainTypes.BSC) {
-      explorerUrl = bscUrl;
-    } else if (document.blockchain === BlockchainTypes.SOLANA) {
-      explorerUrl = solanaUrl;
-    }
+  if (hash && document.blockchain) {
+    const explorerUrl = getBlockchainExplorerUrl(
+      document.blockchain as BlockchainTypes,
+      hash,
+    );
 
     hashBlock = `<table align="left" width="100%" border="0" cellPadding="0" cellSpacing="0" role="presentation" style="margin-bottom:9px">
                       <tbody style="width:100%">
