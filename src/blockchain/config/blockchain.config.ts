@@ -50,6 +50,18 @@ export class BlockchainConfigService {
         cluster:
           this.configService.get<string>('SOLANA_CLUSTER') || 'mainnet-beta',
       },
+      [BlockchainTypes.MONAD]: {
+        rpcUrls: [
+          this.configService.get<string>('MONAD_RPC_NODE') ||
+            'https://testnet-rpc.monad.xyz/',
+          this.configService.get<string>('MONAD_RPC_NODE_ANC'),
+        ].filter(Boolean),
+        privateKey: this.configService.get<string>('MONAD_PRIVATE_KEY'),
+        chainId: 10143,
+        transactionValue: '0.0001',
+        gasLimit: 4000000,
+        gasPriceMultiplier: 140,
+      },
     };
   }
 

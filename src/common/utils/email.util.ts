@@ -14,6 +14,7 @@ function getBlockchainExplorerUrl(
     [BlockchainTypes.POLYGON]: `https://polygonscan.com/tx/${hash}`,
     [BlockchainTypes.BSC]: `https://bscscan.com/tx/${hash}`,
     [BlockchainTypes.SOLANA]: `https://solscan.io/tx/${hash}`,
+    [BlockchainTypes.MONAD]: `http://testnet.monadexplorer.com/tx/${hash}`,
   };
 
   return explorerUrls[blockchain];

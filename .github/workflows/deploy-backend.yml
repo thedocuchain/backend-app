@@ -43,6 +43,9 @@ jobs:
         SOLANA_RPC_NODE_ANC: ${{ secrets.SOLANA_RPC_NODE_ANC }}
         SOLANA_PRIVATE_KEY: ${{ secrets.SOLANA_PRIVATE_KEY }}
         SOLANA_CLUSTER: ${{ secrets.SOLANA_CLUSTER }}
+        MONAD_PRIVATE_KEY: ${{ secrets.MONAD_PRIVATE_KEY }}
+        MONAD_RPC_NODE: ${{ secrets.MONAD_RPC_NODE }}
+        MONAD_RPC_NODE_ANC: ${{ secrets.MONAD_RPC_NODE_ANC }}
         TG_BOT_TOKEN: ${{ secrets.TG_BOT_TOKEN }}
         TG_CHAT_ID: ${{ secrets.TG_CHAT_ID }}
         RECAPTCHA_SECRET_KEY: ${{ secrets.RECAPTCHA_SECRET_KEY }}
