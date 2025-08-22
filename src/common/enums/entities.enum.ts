@@ -32,6 +32,7 @@ export enum BlockchainTypes {
   BSC = 'bsc',
   SOLANA = 'solana',
   MONAD = 'monad',
+  BASE = 'base',
 }
 
 export enum AuditLogEventTypes {

@@ -46,6 +46,10 @@ jobs:
         MONAD_PRIVATE_KEY: ${{ secrets.MONAD_PRIVATE_KEY }}
         MONAD_RPC_NODE: ${{ secrets.MONAD_RPC_NODE }}
         MONAD_RPC_NODE_ANC: ${{ secrets.MONAD_RPC_NODE_ANC }}
+        BASE_PRIVATE_KEY: ${{ secrets.BASE_PRIVATE_KEY }}
+        BASE_RPC_NODE: ${{ secrets.BASE_RPC_NODE }}
+        BASE_RPC_NODE_ANC: ${{ secrets.BASE_RPC_NODE_ANC }}
+        BASE_RPC_NODE_DRPC: ${{ secrets.BASE_RPC_NODE_DRPC }}
         TG_BOT_TOKEN: ${{ secrets.TG_BOT_TOKEN }}
         TG_CHAT_ID: ${{ secrets.TG_CHAT_ID }}
         RECAPTCHA_SECRET_KEY: ${{ secrets.RECAPTCHA_SECRET_KEY }}

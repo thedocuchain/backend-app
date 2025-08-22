@@ -62,6 +62,21 @@ export class BlockchainConfigService {
         gasLimit: 4000000,
         gasPriceMultiplier: 140,
       },
+      [BlockchainTypes.BASE]: {
+        rpcUrls: [
+          this.configService.get<string>('BASE_RPC_NODE') ||
+            'https://mainnet.base.org',
+          this.configService.get<string>('BASE_RPC_NODE_ANC') ||
+            'https://1rpc.io/base',
+          this.configService.get<string>('BASE_RPC_NODE_DRPC') ||
+            'https://base.drpc.org',
+        ].filter(Boolean),
+        privateKey: this.configService.get<string>('BASE_PRIVATE_KEY'),
+        chainId: 8453,
+        transactionValue: '0.00001',
+        gasLimit: 4000000,
+        gasPriceMultiplier: 140,
+      },
     };
   }
 
