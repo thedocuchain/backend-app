@@ -14,10 +14,10 @@ import {
   sendAndConfirmTransaction,
   clusterApiUrl,
 } from '@solana/web3.js';
-
 import { BlockchainTypes } from '../common/enums/entities.enum';
 import { BlockchainConfigService } from './config/blockchain.config';
 import { BlockchainConfig } from './interfaces/blockchain-config.interface';
+import { BitcoinService } from './bitcoin.service';
 
 interface EvmBlockchainInstance {
   web3: Web3;
@@ -40,6 +40,7 @@ export class BlockchainService {
   private readonly logger = new Logger(BlockchainService.name);
   private readonly blockchainInstances: Map<string, BlockchainInstance> =
     new Map();
+  private readonly bitcoinService = new BitcoinService();
 
   constructor(
     private readonly configService: ConfigService,
@@ -76,6 +77,8 @@ export class BlockchainService {
   ): Promise<void> {
     if (blockchain === BlockchainTypes.SOLANA) {
       await this.initializeSolanaBlockchain(blockchain, config);
+    } else if (blockchain === BlockchainTypes.BITCOIN) {
+      await this.bitcoinService.initialize(config);
     } else {
       this.initializeEvmBlockchain(blockchain, config);
     }
@@ -145,9 +148,6 @@ export class BlockchainService {
 
   private async isNodeAvailable(blockchain: string): Promise<boolean> {
     const instance = this.getBlockchainInstance(blockchain);
-    this.logger.log(
-      `Connected to ${blockchain} node: ${instance.config.rpcUrls[instance.currentNodeIndex]}`,
-    );
 
     try {
       if (blockchain === BlockchainTypes.SOLANA) {
@@ -176,7 +176,7 @@ export class BlockchainService {
         config.rpcUrls[instance.currentNodeIndex] ||
         clusterApiUrl(config.cluster as any);
       solanaInstance.connection = new Connection(rpcUrl, 'confirmed');
-    } else {
+    } else if (blockchain !== BlockchainTypes.BITCOIN) {
       const evmInstance = instance as EvmBlockchainInstance;
       evmInstance.web3 = new Web3(
         new Web3.providers.HttpProvider(
@@ -196,6 +196,11 @@ export class BlockchainService {
   }
 
   private async ensureNodeAvailability(blockchain: string): Promise<void> {
+    if (blockchain === BlockchainTypes.BITCOIN) {
+      await this.bitcoinService.ensureNodeAvailability();
+      return;
+    }
+
     if (!(await this.isNodeAvailable(blockchain))) {
       const instance = this.getBlockchainInstance(blockchain);
       this.logger.warn(
@@ -220,6 +225,8 @@ export class BlockchainService {
 
     if (blockchain === BlockchainTypes.SOLANA) {
       return this.sendSolanaTransaction(hash, blockchain);
+    } else if (blockchain === BlockchainTypes.BITCOIN) {
+      return this.bitcoinService.sendTransaction(hash);
     } else {
       return this.sendEvmTransaction(hash, blockchain);
     }

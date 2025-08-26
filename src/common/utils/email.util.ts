@@ -15,6 +15,8 @@ function getBlockchainExplorerUrl(
     [BlockchainTypes.BSC]: `https://bscscan.com/tx/${hash}`,
     [BlockchainTypes.SOLANA]: `https://solscan.io/tx/${hash}`,
     [BlockchainTypes.MONAD]: `http://testnet.monadexplorer.com/tx/${hash}`,
+    [BlockchainTypes.BASE]: `https://basescan.org/tx/${hash}`,
+    [BlockchainTypes.BITCOIN]: `https://blockstream.info/tx/${hash}`,
   };
 
   return explorerUrls[blockchain];

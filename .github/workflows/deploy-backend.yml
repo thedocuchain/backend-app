@@ -50,6 +50,12 @@ jobs:
         BASE_RPC_NODE: ${{ secrets.BASE_RPC_NODE }}
         BASE_RPC_NODE_ANC: ${{ secrets.BASE_RPC_NODE_ANC }}
         BASE_RPC_NODE_DRPC: ${{ secrets.BASE_RPC_NODE_DRPC }}
+        BITCOIN_PRIVATE_KEY: ${{ secrets.BITCOIN_PRIVATE_KEY }}
+        BITCOIN_RPC_NODE: ${{ secrets.BITCOIN_RPC_NODE }}
+        BITCOIN_RPC_NODE_2: ${{ secrets.BITCOIN_RPC_NODE_2 }}
+        BITCOIN_RPC_NODE_MEMPOOL: ${{ secrets.BITCOIN_RPC_NODE_MEMPOOL }}
+        BITCOIN_NETWORK: ${{ secrets.BITCOIN_NETWORK }}
+        BITCOIN_FEE_RATE: ${{ secrets.BITCOIN_FEE_RATE }}
         TG_BOT_TOKEN: ${{ secrets.TG_BOT_TOKEN }}
         TG_CHAT_ID: ${{ secrets.TG_CHAT_ID }}
         RECAPTCHA_SECRET_KEY: ${{ secrets.RECAPTCHA_SECRET_KEY }}

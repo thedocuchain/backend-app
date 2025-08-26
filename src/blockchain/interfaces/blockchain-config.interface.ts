@@ -6,6 +6,8 @@ export interface BlockchainConfig {
   gasLimit?: number;
   gasPriceMultiplier?: number;
   cluster?: string;
+  network?: 'mainnet' | 'testnet' | 'regtest';
+  feeRate?: number;
 }
 
 export interface BlockchainConfigs {

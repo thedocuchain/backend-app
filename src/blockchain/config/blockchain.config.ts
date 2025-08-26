@@ -77,6 +77,23 @@ export class BlockchainConfigService {
         gasLimit: 4000000,
         gasPriceMultiplier: 140,
       },
+      [BlockchainTypes.BITCOIN]: {
+        rpcUrls: [
+          this.configService.get<string>('BITCOIN_RPC_NODE') ||
+            'https://blockstream.info/api',
+          this.configService.get<string>('BITCOIN_RPC_NODE_2') ||
+            'https://api.blockcypher.com/v1/btc/main',
+          this.configService.get<string>('BITCOIN_RPC_NODE_MEMPOOL') ||
+            'https://mempool.space/api',
+        ].filter(Boolean),
+        privateKey: this.configService.get<string>('BITCOIN_PRIVATE_KEY'),
+        transactionValue: '0.00001',
+        network: (this.configService.get<string>('BITCOIN_NETWORK') ||
+          'mainnet') as 'mainnet' | 'testnet' | 'regtest',
+        feeRate: parseInt(
+          this.configService.get<string>('BITCOIN_FEE_RATE') || '2',
+        ),
+      },
     };
   }
 
