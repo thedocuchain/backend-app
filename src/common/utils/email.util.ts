@@ -17,6 +17,7 @@ function getBlockchainExplorerUrl(
     [BlockchainTypes.MONAD]: `http://testnet.monadexplorer.com/tx/${hash}`,
     [BlockchainTypes.BASE]: `https://basescan.org/tx/${hash}`,
     [BlockchainTypes.BITCOIN]: `https://blockstream.info/tx/${hash}`,
+    [BlockchainTypes.SEI]: `https://seiscan.io/tx/${hash}`,
   };
 
   return explorerUrls[blockchain];

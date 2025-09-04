@@ -94,6 +94,21 @@ export class BlockchainConfigService {
           this.configService.get<string>('BITCOIN_FEE_RATE') || '2',
         ),
       },
+      [BlockchainTypes.SEI]: {
+        rpcUrls: [
+          this.configService.get<string>('SEI_RPC_NODE') ||
+            'https://evm-rpc.sei-apis.com',
+          this.configService.get<string>('SEI_RPC_NODE_2') ||
+            'https://sei-evm-rpc.publicnode.com',
+          this.configService.get<string>('SEI_RPC_NODE_3') ||
+            'https://sei-evm.drpc.org',
+        ].filter(Boolean),
+        privateKey: this.configService.get<string>('SEI_PRIVATE_KEY'),
+        chainId: 1329,
+        transactionValue: '0.0001',
+        gasLimit: 4000000,
+        gasPriceMultiplier: 140,
+      },
     };
   }
 

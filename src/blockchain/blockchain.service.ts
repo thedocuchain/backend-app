@@ -155,7 +155,7 @@ export class BlockchainService {
         await solanaInstance.connection.getVersion();
       } else {
         const evmInstance = instance as EvmBlockchainInstance;
-        await evmInstance.web3.eth.net.isListening();
+        await evmInstance.web3.eth.getChainId();
       }
       return true;
     } catch (error) {
