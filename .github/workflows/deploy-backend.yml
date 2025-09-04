@@ -56,6 +56,10 @@ jobs:
         BITCOIN_RPC_NODE_MEMPOOL: ${{ secrets.BITCOIN_RPC_NODE_MEMPOOL }}
         BITCOIN_NETWORK: ${{ secrets.BITCOIN_NETWORK }}
         BITCOIN_FEE_RATE: ${{ secrets.BITCOIN_FEE_RATE }}
+        SEI_PRIVATE_KEY: ${{ secrets.SEI_PRIVATE_KEY }}
+        SEI_RPC_NODE: ${{ secrets.SEI_RPC_NODE }}
+        SEI_RPC_NODE_2: ${{ secrets.SEI_RPC_NODE_2 }}
+        SEI_RPC_NODE_3: ${{ secrets.SEI_RPC_NODE_3 }}
         TG_BOT_TOKEN: ${{ secrets.TG_BOT_TOKEN }}
         TG_CHAT_ID: ${{ secrets.TG_CHAT_ID }}
         RECAPTCHA_SECRET_KEY: ${{ secrets.RECAPTCHA_SECRET_KEY }}
