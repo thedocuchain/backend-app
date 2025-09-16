@@ -477,13 +477,14 @@ export class PdfService {
       color: rgb(0, 0, 0),
     });
 
-    let yCord = 620;
+    let yCord = 620 - 15;
     const signers = document.users.filter(
       (user) => user.role === UserRoles.SIGNER,
     );
 
+    const signerSectionHeight = 105;
     await Promise.all(
-      signers.map(async (user, index) => {
+      signers.map(async (user) => {
         const signatureFontSize = user.signatures[0]?.fontSize ?? 22;
         const signatureFont =
           user.signatures[0]?.signFont ?? 'italianno-regular';
@@ -493,7 +494,6 @@ export class PdfService {
           fontBytes = await this.fetchFontBytes('marck-script-regular');
         }
         const customFont = await pdfDoc.embedFont(fontBytes);
-        yCord = yCord - 15 - index * 90;
 
         page.drawText(`${user.email}`, {
           x: leftX,
@@ -543,23 +543,25 @@ export class PdfService {
           thickness: 1,
           color: rgb(0, 0, 0),
         });
+        yCord = yCord - signerSectionHeight;
 
-        if (yCord - 100 < 0) {
+        if (yCord - signerSectionHeight < 0) {
           pdfDoc.addPage([595, 842]);
           yCord = 800;
           page = pdfDoc.getPage(pdfDoc.getPages().length - 1);
         }
       }),
     );
+    yCord -= 5;
 
     page.drawText('Event Log', {
       x: leftX,
-      y: yCord - 110,
+      y: yCord,
       size: titleFontSize,
       font: defaultFontBold,
     });
 
-    let yCord2 = yCord - 110;
+    let yCord2 = yCord;
     await Promise.all(
       auditLogs.map(async (auditLog) => {
         yCord2 = yCord2 - 20;
