@@ -411,7 +411,14 @@ export class PdfService {
 
     page.drawText(
       `${document.name.endsWith('.pdf') ? document.name : document.name + '.pdf'}  ${sizeFormatter(document.size)}`,
-      { x: leftX, y: 750, size: fontSize, font: defaultFontBold },
+      {
+        x: leftX,
+        maxWidth: rightX - leftX,
+        y: 750,
+        size: fontSize,
+        font: defaultFontBold,
+        lineHeight: 14,
+      },
     );
 
     page.drawText('Original SHA256:', {
