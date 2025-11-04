@@ -13,6 +13,7 @@ import { EventsModule } from '../events/events.module';
 import { BlockchainModule } from '../blockchain/blockchain.module';
 import { AuditLogsModule } from '../audit-logs/audit-logs.module';
 import { TransformFormatModule } from '../transform-format/transform-format.module';
+import { RecaptchaModule } from '../recaptcha/recaptcha.module';
 
 @Module({
   imports: [
@@ -28,6 +29,7 @@ import { TransformFormatModule } from '../transform-format/transform-format.modu
     BlockchainModule,
     AuditLogsModule,
     TransformFormatModule,
+    RecaptchaModule,
   ],
   controllers: [DocumentsController],
   providers: [DocumentsService],

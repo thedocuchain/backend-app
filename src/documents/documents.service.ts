@@ -46,6 +46,7 @@ import { AuthService } from '../auth/auth.service';
 import { BlockchainService } from '../blockchain/blockchain.service';
 import { AuditLogsService } from '../audit-logs/audit-logs.service';
 import { TransformFormatService } from '../transform-format/transform-format.service';
+import { RecaptchaService } from '../recaptcha/recaptcha.service';
 
 @Injectable()
 export class DocumentsService {
@@ -65,6 +66,7 @@ export class DocumentsService {
     private readonly auditLogsService: AuditLogsService,
     private readonly eventEmitter: EventEmitter2,
     private readonly transformFormatService: TransformFormatService,
+    private readonly recaptchaService: RecaptchaService,
   ) {}
   public async upload(file: Express.Multer.File): Promise<UploadDocumentDto> {
     if (!file) {
@@ -130,6 +132,14 @@ export class DocumentsService {
     id: string,
     updateDocumentDto: AddUsersDocumentDto,
   ): Promise<void> {
+    const isHuman = await this.recaptchaService.verify(
+      updateDocumentDto.recaptchaToken,
+    );
+
+    if (!isHuman) {
+      throw new BadRequestException('reCAPTCHA verification failed');
+    }
+
     const documentName = updateDocumentDto.name;
     const users = updateDocumentDto?.users;
     const blockchain = updateDocumentDto.blockchain;
@@ -547,7 +557,17 @@ export class DocumentsService {
     }
   }
 
-  public async notify(id: string, userId?: string): Promise<void> {
+  public async notify(
+    id: string,
+    recaptchaToken: string,
+    userId?: string,
+  ): Promise<void> {
+    const isHuman = await this.recaptchaService.verify(recaptchaToken);
+
+    if (!isHuman) {
+      throw new BadRequestException('reCAPTCHA verification failed');
+    }
+
     const document = await this.findOne(id);
     if (!document) {
       throw new BadRequestException('Document is not found.');

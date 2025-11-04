@@ -30,6 +30,7 @@ import { AddUsersDocumentDto } from './dto/add-users-document.dto';
 import { SignDocumentDto } from './dto/sign-document.dto';
 import { FindDocumentDto } from './dto/find-document.dto';
 import { SubscribeDocumentDto } from './dto/subscribe-document.dto';
+import { NotifyDocumentDto } from './dto/notify-document.dto';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 
 @ApiTags('documents')
@@ -116,8 +117,9 @@ export class DocumentsController {
   notifyUsers(
     @Param('id')
     id: string,
+    @Body() notifyDocumentDto: NotifyDocumentDto,
   ) {
-    return this.documentsService.notify(id);
+    return this.documentsService.notify(id, notifyDocumentDto.recaptchaToken);
   }
 
   @Post(':id/users/:userId/notify')
@@ -127,8 +129,13 @@ export class DocumentsController {
     id: string,
     @Param('userId')
     userId: string,
+    @Body() notifyDocumentDto: NotifyDocumentDto,
   ) {
-    return this.documentsService.notify(id, userId);
+    return this.documentsService.notify(
+      id,
+      notifyDocumentDto.recaptchaToken,
+      userId,
+    );
   }
 
   @ApiBearerAuth()
