@@ -2,6 +2,7 @@ import {
   Injectable,
   InternalServerErrorException,
   Logger,
+  OnModuleInit,
 } from '@nestjs/common';
 import Web3, { Web3BaseWalletAccount } from 'web3';
 import { ConfigService } from '@nestjs/config';
@@ -36,7 +37,7 @@ interface SolanaBlockchainInstance {
 type BlockchainInstance = EvmBlockchainInstance | SolanaBlockchainInstance;
 
 @Injectable()
-export class BlockchainService {
+export class BlockchainService implements OnModuleInit {
   private readonly logger = new Logger(BlockchainService.name);
   private readonly blockchainInstances: Map<string, BlockchainInstance> =
     new Map();
@@ -45,10 +46,10 @@ export class BlockchainService {
   constructor(
     private readonly configService: ConfigService,
     private readonly blockchainConfigService: BlockchainConfigService,
-  ) {
-    this.initializeBlockchains().catch((error) => {
-      this.logger.error('Failed to initialize blockchains:', error);
-    });
+  ) {}
+
+  async onModuleInit(): Promise<void> {
+    await this.initializeBlockchains();
   }
 
   private async initializeBlockchains(): Promise<void> {
