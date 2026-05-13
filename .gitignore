@@ -54,3 +54,25 @@ pids
 
 # Diagnostic reports (https://nodejs.org/api/report.html)
 report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json
+
+pg_data
+
+# Local infrastructure / inventory (contains server IPs and secrets)
+ansible/inventory/inventory.ini
+ansible/deploy-backend-stage.yml
+ansible/templates/.env-compose-stage.j2
+docker-compose.stage.yml
+
+# Backups and one-off dumps
+.env.old
+.env.backup
+*.dump
+*.sql
+res.txt
+docs.txt
+signed-urls-from-a.txt
+certificate-of-completion.pdf
+generate-signed-urls.ts
+test-generate-audit-log-pdf.ts
+/a
+/a.py

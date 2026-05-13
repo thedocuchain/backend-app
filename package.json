@@ -4,7 +4,12 @@
   "description": "",
   "author": "",
   "private": true,
-  "license": "UNLICENSED",
+  "license": "MIT",
+  "overrides": {
+    "minimatch": "^9.0.7",
+    "glob": "^10.5.0",
+    "picomatch": "^4.0.4"
+  },
   "scripts": {
     "build": "nest build",
     "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
@@ -66,7 +71,7 @@
     "reflect-metadata": "^0.2.0",
     "rxjs": "^7.8.1",
     "tiny-secp256k1": "^2.2.4",
-    "typeorm": "0.3.20",
+    "typeorm": "^0.3.29",
     "uuid": "^9.0.1",
     "web3": "^4.10.0",
     "winston": "^3.13.1"

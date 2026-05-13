@@ -1,0 +1,5 @@
+[docuchain_backend]
+backend01 ansible_host=REPLACE_WITH_PROD_HOST
+
+[docuchain_backend_stage]
+backend-stage ansible_host=REPLACE_WITH_STAGE_HOST

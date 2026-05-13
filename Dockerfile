@@ -1,4 +1,4 @@
-FROM node:20 AS deps
+FROM node:20-bookworm AS deps
 WORKDIR /usr/src/app
 COPY package*.json ./
 RUN npm ci
@@ -11,7 +11,7 @@ COPY . .
 CMD ["npm", "run", "start:dev"]
 
 # BUILD
-FROM node:20 AS build
+FROM node:20-bookworm AS build
 WORKDIR /usr/src/app
 COPY --from=deps /usr/src/app/node_modules ./node_modules
 COPY . .
@@ -19,13 +19,14 @@ ENV NODE_ENV production
 RUN npm run build && npm prune
 
 # PRODUCTION
-FROM node:20 AS production
-RUN set -o errexit -o nounset \
-    && apt update && apt upgrade -y \
-    && apt install build-essential \
-    libcairo2-dev libpango1.0-dev libjpeg-dev \
-    libgif-dev librsvg2-dev libreoffice -y \
-    && rm -rf /var/apt/cache/*
+FROM node:20-bookworm AS production
+RUN set -o errexit \
+    && rm -rf /usr/share/doc/* /usr/share/man/* /tmp/* /root/.npm /opt/yarn-* \
+    && apt-get update -o Acquire::AllowInsecureRepositories=true \
+    && apt-get install -y --no-install-recommends --allow-unauthenticated \
+       libreoffice-writer \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/* /var/cache/apt/archives/* /usr/share/doc/* /usr/share/man/*
 
 USER node
 
