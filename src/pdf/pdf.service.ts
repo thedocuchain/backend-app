@@ -71,7 +71,7 @@ export class PdfService {
     pageHeight: number,
   ): Promise<number> {
     const data = await pdfDoc.save();
-    const pdfjsLib = await import('pdfjs-dist/build/pdf.mjs');
+    const pdfjsLib = await import('pdfjs-dist/legacy/build/pdf.mjs');
     const doc = await pdfjsLib.getDocument({ data }).promise;
     const page = await doc.getPage(doc.numPages);
 
