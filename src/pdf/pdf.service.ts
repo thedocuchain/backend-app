@@ -77,23 +77,15 @@ export class PdfService {
 
     const textContent = await page.getTextContent();
     const operatorList = await page.getOperatorList();
-    let imagesHeight = 0;
-    for (let i = 0; i < operatorList.fnArray.length; i++) {
-      if (operatorList.fnArray[i] === pdfjsLib.OPS.paintImageXObject) {
-        const args = operatorList.argsArray[i];
-        const imageName = args[0];
-        const image = page.objs.get(imageName);
-        if (image) {
-          imagesHeight += image.height;
-        }
-      }
-    }
+    const hasImages = operatorList.fnArray.includes(
+      pdfjsLib.OPS.paintImageXObject,
+    );
 
     if (!textContent) {
       return pageHeight;
     }
 
-    if (textContent.items.length === 0 || imagesHeight > 0) {
+    if (textContent.items.length === 0 || hasImages) {
       return 50;
     }
 
