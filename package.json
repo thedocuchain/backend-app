@@ -66,7 +66,7 @@
     "passport-jwt": "^4.0.1",
     "pdf-lib": "^1.17.1",
     "pdf-to-png-converter": "^3.2.0",
-    "pdfjs-dist": "^4.3.136",
+    "pdfjs-dist": "^5.6.205",
     "pg": "^8.11.5",
     "reflect-metadata": "^0.2.0",
     "rxjs": "^7.8.1",
