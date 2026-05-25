@@ -16,15 +16,27 @@ export class MandrillWebhookGuard implements CanActivate {
     const request: Request = context.switchToHttp().getRequest();
     const body = request.body || {};
 
-    // Mandrill's dashboard probes the URL with an empty POST when saving a
-    // new webhook entry. The signing key is generated on save, so the probe
-    // is unsigned. Allow any request that carries no event payload through.
     if (!body.mandrill_events) {
       return true;
     }
 
+    // Mandrill probes the URL during webhook creation with an empty events
+    // array. The signing key is generated on save, so probes can't be
+    // verified. Empty arrays carry no work for us, so accepting them is safe.
+    try {
+      const parsed = JSON.parse(body.mandrill_events);
+      if (Array.isArray(parsed) && parsed.length === 0) {
+        return true;
+      }
+    } catch {
+      // fall through to signature check
+    }
+
     const signature = request.header('x-mandrill-signature');
     if (!signature || !this.webhookKey || !this.webhookUrl) {
+      console.warn(
+        `Mandrill webhook missing signature/config. ua=${request.header('user-agent')} body[0..200]=${String(body.mandrill_events).slice(0, 200)}`,
+      );
       throw new UnauthorizedException(
         'Missing Mandrill webhook signature or config',
       );
@@ -48,7 +60,9 @@ export class MandrillWebhookGuard implements CanActivate {
       expected.length !== provided.length ||
       !crypto.timingSafeEqual(expected, provided)
     ) {
-      console.error('Invalid Mandrill webhook signature');
+      console.error(
+        `Invalid Mandrill webhook signature. ua=${request.header('user-agent')} body[0..200]=${String(body.mandrill_events).slice(0, 200)}`,
+      );
       throw new UnauthorizedException('Invalid Mandrill webhook signature');
     }
     return true;
