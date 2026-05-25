@@ -1,4 +1,11 @@
-import { Body, Controller, HttpCode, Post, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Head,
+  HttpCode,
+  Post,
+  UseGuards,
+} from '@nestjs/common';
 import { NotificationsService } from './notifications.service';
 import { MandrillEvent } from './interfaces/webhook.interface';
 import { MandrillWebhookGuard } from '../common/guards/mandrill-webhook.guard';
@@ -8,6 +15,12 @@ import { ApiTags } from '@nestjs/swagger';
 @Controller('notifications')
 export class NotificationsController {
   constructor(private readonly notificationsService: NotificationsService) {}
+
+  @Head('webhook')
+  @HttpCode(200)
+  webhookReachabilityProbe() {
+    return;
+  }
 
   @Post('webhook')
   @UseGuards(MandrillWebhookGuard)
