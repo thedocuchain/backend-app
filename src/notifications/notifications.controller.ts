@@ -1,7 +1,7 @@
 import { Body, Controller, HttpCode, Post, UseGuards } from '@nestjs/common';
 import { NotificationsService } from './notifications.service';
-import { MailgunEvent } from './interfaces/webhook.interface';
-import { MailgunWebhookGuard } from '../common/guards/mailgun-webhook.guard';
+import { MandrillEvent } from './interfaces/webhook.interface';
+import { MandrillWebhookGuard } from '../common/guards/mandrill-webhook.guard';
 import { ApiTags } from '@nestjs/swagger';
 
 @ApiTags('notifications')
@@ -9,24 +9,19 @@ import { ApiTags } from '@nestjs/swagger';
 export class NotificationsController {
   constructor(private readonly notificationsService: NotificationsService) {}
 
-  @Post('webhook/delivered')
-  @UseGuards(MailgunWebhookGuard)
+  @Post('webhook')
+  @UseGuards(MandrillWebhookGuard)
   @HttpCode(200)
-  async handleDelivered(@Body() webhookData: MailgunEvent) {
-    return this.notificationsService.handleWebhook(webhookData);
-  }
-
-  @Post('webhook/permanent-failed')
-  @UseGuards(MailgunWebhookGuard)
-  @HttpCode(200)
-  async handlePermanentFailed(@Body() webhookData: MailgunEvent) {
-    return this.notificationsService.handleWebhook(webhookData);
-  }
-
-  @Post('webhook/temp-failed')
-  @UseGuards(MailgunWebhookGuard)
-  @HttpCode(200)
-  async handleTempFailed(@Body() webhookData: MailgunEvent) {
-    return this.notificationsService.handleWebhook(webhookData);
+  async handleWebhook(@Body('mandrill_events') mandrillEvents: string) {
+    let events: MandrillEvent[] = [];
+    if (mandrillEvents) {
+      try {
+        events = JSON.parse(mandrillEvents);
+      } catch (err) {
+        console.error('Failed to parse mandrill_events payload', err);
+        return;
+      }
+    }
+    return this.notificationsService.handleWebhook(events);
   }
 }

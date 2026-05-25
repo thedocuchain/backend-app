@@ -31,8 +31,8 @@ jobs:
         GOOGLE_SECRET: ${{ secrets.GOOGLE_SECRET }}
         GCS_CLIENT_X509_CERT_URL: ${{ secrets.GCS_CLIENT_X509_CERT_URL }}
         GCS_BUCKET_NAME: ${{ secrets.GCS_BUCKET_NAME }}
-        MAILGUN_API_KEY: ${{ secrets.MAILGUN_API_KEY }}
-        MAILGUN_SIGNING_KEY: ${{ secrets.MAILGUN_SIGNING_KEY }}
+        MANDRILL_API_KEY: ${{ secrets.MANDRILL_API_KEY }}
+        MANDRILL_WEBHOOK_KEY: ${{ secrets.MANDRILL_WEBHOOK_KEY }}
         JWT_SECRET: ${{ secrets.JWT_SECRET }}
         MATIC_PRIVATE_KEY: ${{ secrets.MATIC_PRIVATE_KEY }}
         POLYGON_RPC_NODE: ${{ secrets.POLYGON_RPC_NODE }}

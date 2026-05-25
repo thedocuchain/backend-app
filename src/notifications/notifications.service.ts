@@ -1,10 +1,8 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import FormData from 'form-data';
-import Mailgun from 'mailgun.js';
+import mailchimpTransactional from '@mailchimp/mailchimp_transactional';
 
-import { IMailgunClient } from 'mailgun.js/Interfaces';
-import { getMailgunConfig } from '../configs/mailgun.config';
+import { getMandrillConfig } from '../configs/mandrill.config';
 import { User } from '../database/entities/user.entity';
 import { Document } from '../database/entities/document.entity';
 import {
@@ -13,29 +11,46 @@ import {
   UserRoles,
 } from '../common/enums/entities.enum';
 import { generateEmailTemplate } from '../common/utils/email.util';
-import { MailgunEvent } from './interfaces/webhook.interface';
+import { MandrillEvent } from './interfaces/webhook.interface';
 import { UsersService } from '../users/users.service';
 import { AuthService } from '../auth/auth.service';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { ReadDocumentDto } from '../documents/dto/read-document.dto';
 
+type MandrillClient = ReturnType<typeof mailchimpTransactional>;
+
+interface MandrillAttachment {
+  type: string;
+  name: string;
+  content: string;
+}
+
+const FAILURE_EVENTS: ReadonlyArray<MandrillEvent['event']> = [
+  'hard_bounce',
+  'soft_bounce',
+  'reject',
+  'spam',
+  'deferred',
+];
+
 @Injectable()
 export class NotificationsService {
-  private readonly mg: IMailgunClient;
-  private readonly domain: string;
+  private readonly mailchimp: MandrillClient;
   private readonly emailFrom: string;
+  private readonly emailFromName: string;
 
   constructor(
     @InjectRepository(Document)
     private readonly documentRepository: Repository<Document>,
-    private configService: ConfigService,
+    configService: ConfigService,
     private readonly usersService: UsersService,
     private readonly authService: AuthService,
   ) {
-    this.mg = new Mailgun(FormData).client(getMailgunConfig(configService));
-    this.domain = configService.get<string>('MAILGUN_DOMAIN');
-    this.emailFrom = configService.get<string>('MAILGUN_FROM_EMAIL');
+    const cfg = getMandrillConfig(configService);
+    this.mailchimp = mailchimpTransactional(cfg.apiKey);
+    this.emailFrom = cfg.fromEmail;
+    this.emailFromName = cfg.fromName;
   }
 
   async sendEmail(
@@ -66,70 +81,29 @@ export class NotificationsService {
           hash,
           downloadLink,
         );
-        if (file) {
-          await this.mg.messages.create(this.domain, {
-            from: this.emailFrom,
-            to: [user.email],
-            'o:tag': [user.id, document.id],
-            'o:dkim': 'yes',
-            'o:testmode': false,
-            'h:X-Mailgun-Variables': JSON.stringify({
-              user_id: user.id,
-              document_id: document.id,
-            }),
+
+        const attachments = this.buildAttachments(
+          document,
+          file,
+          downloadLink,
+          auditLogFile,
+        );
+
+        await this.mailchimp.messages.send({
+          message: {
+            from_email: this.emailFrom,
+            from_name: this.emailFromName || undefined,
+            to: [{ email: user.email, type: 'to' }],
             subject,
             html: template,
-            attachment: [
-              {
-                data: file,
-                filename: `${document.name}`.endsWith('.pdf')
-                  ? `${document.name}`
-                  : `${document.name}.pdf`,
-                type: 'application/pdf',
-              },
-              {
-                data: auditLogFile,
-                filename: `Certificate of Completion.pdf`,
-                type: 'application/pdf',
-              },
-            ],
-          });
-        } else if (downloadLink) {
-          await this.mg.messages.create(this.domain, {
-            from: this.emailFrom,
-            to: [user.email],
-            'o:tag': [user.id, document.id],
-            'o:dkim': 'yes',
-            'o:testmode': false,
-            'h:X-Mailgun-Variables': JSON.stringify({
+            tags: [user.id, document.id],
+            metadata: {
               user_id: user.id,
               document_id: document.id,
-            }),
-            subject,
-            html: template,
-            attachment: [
-              {
-                data: auditLogFile,
-                filename: `Certificate of Completion.pdf`,
-                type: 'application/pdf',
-              },
-            ],
-          });
-        } else {
-          await this.mg.messages.create(this.domain, {
-            from: this.emailFrom,
-            to: [user.email],
-            'o:tag': [user.id, document.id],
-            'o:dkim': 'yes',
-            'o:testmode': false,
-            'h:X-Mailgun-Variables': JSON.stringify({
-              user_id: user.id,
-              document_id: document.id,
-            }),
-            subject,
-            html: template,
-          });
-        }
+            } as any,
+            ...(attachments ? { attachments } : {}),
+          },
+        });
       } catch (error) {
         console.error(`Failed to send email:`, error);
         await this.usersService.update(user.id, {
@@ -141,25 +115,80 @@ export class NotificationsService {
     await Promise.all(sendEmailPromises);
   }
 
-  async handleWebhook(webhookData: MailgunEvent): Promise<void> {
-    const timestamp = webhookData['event-data'].timestamp;
-    let notifyStatus = NotifyStatuses.DELIVERED;
-    const lastNotifyDate = new Date(timestamp * 1000);
-    const userId = webhookData['event-data'].tags[0];
-    const documentId = webhookData['event-data'].tags[1];
+  private buildAttachments(
+    document: ReadDocumentDto,
+    file?: Buffer,
+    downloadLink?: string,
+    auditLogFile?: Buffer,
+  ): MandrillAttachment[] | undefined {
+    const docName = `${document.name}`.endsWith('.pdf')
+      ? `${document.name}`
+      : `${document.name}.pdf`;
 
-    if (webhookData['event-data'].event === 'failed') {
-      notifyStatus = NotifyStatuses.ERROR;
+    if (file) {
+      const out: MandrillAttachment[] = [
+        {
+          type: 'application/pdf',
+          name: docName,
+          content: file.toString('base64'),
+        },
+      ];
+      if (auditLogFile) {
+        out.push({
+          type: 'application/pdf',
+          name: 'Certificate of Completion.pdf',
+          content: auditLogFile.toString('base64'),
+        });
+      }
+      return out;
     }
-    if (timestamp && userId) {
-      await this.usersService.update(userId, { notifyStatus, lastNotifyDate });
+
+    if (downloadLink && auditLogFile) {
+      return [
+        {
+          type: 'application/pdf',
+          name: 'Certificate of Completion.pdf',
+          content: auditLogFile.toString('base64'),
+        },
+      ];
+    }
+
+    return undefined;
+  }
+
+  async handleWebhook(events: MandrillEvent[]): Promise<void> {
+    if (!Array.isArray(events)) return;
+    for (const event of events) {
+      await this.handleSingleEvent(event);
+    }
+  }
+
+  private async handleSingleEvent(event: MandrillEvent): Promise<void> {
+    const timestamp = event?.ts;
+    if (!timestamp) return;
+
+    const isFailure = FAILURE_EVENTS.includes(event.event);
+    const isDelivered = event.event === 'send' || event.event === 'deliver';
+    if (!isFailure && !isDelivered) return;
+
+    const userId =
+      event.msg?.metadata?.user_id ?? event.msg?.tags?.[0];
+    const documentId =
+      event.msg?.metadata?.document_id ?? event.msg?.tags?.[1];
+    if (!userId) return;
+
+    const notifyStatus = isFailure
+      ? NotifyStatuses.ERROR
+      : NotifyStatuses.DELIVERED;
+    const lastNotifyDate = new Date(timestamp * 1000);
+
+    await this.usersService.update(userId, { notifyStatus, lastNotifyDate });
+
+    if (documentId && notifyStatus === NotifyStatuses.DELIVERED) {
       const document = await this.documentRepository.findOneBy({
         id: documentId,
       });
-      if (
-        document.status === DocumentStatuses.SENT &&
-        notifyStatus === NotifyStatuses.DELIVERED
-      ) {
+      if (document?.status === DocumentStatuses.SENT) {
         await this.documentRepository.update(
           { id: documentId },
           { status: DocumentStatuses.DELIVERED },

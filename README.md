@@ -27,7 +27,7 @@ email.
 - On-chain hash anchoring across seven networks
 - Encrypted document storage on Google Cloud Storage with signed-URL delivery
 - JWT auth, reCAPTCHA v3 verification on public endpoints
-- Mailgun-driven transactional email
+- Mailchimp Transactional (Mandrill) for outbound email
 - Swagger API docs in non-production environments
 - Optional Telegram bot for ops notifications
 
@@ -44,7 +44,7 @@ service account.
 
 ```sh
 cp .env.example .env
-# fill in DATABASE_PASSWORD, GCS_*, MAILGUN_*, JWT_SECRET, and at least one
+# fill in DATABASE_PASSWORD, GCS_*, MANDRILL_*, JWT_SECRET, and at least one
 # {CHAIN}_PRIVATE_KEY for the chains you intend to use
 npm install
 docker compose up -d db
@@ -64,7 +64,7 @@ for the full set. Highlights:
 |---|---|
 | `DATABASE_*` | Postgres connection |
 | `GCS_*` | Google Cloud Storage service account + bucket |
-| `MAILGUN_*` | Outbound signing-request emails |
+| `MANDRILL_*`, `MAIL_FROM_*` | Mailchimp Transactional (Mandrill) credentials and From identity for outbound signing-request emails |
 | `JWT_SECRET` | Auth token signing |
 | `{CHAIN}_PRIVATE_KEY`, `{CHAIN}_RPC_NODE` | Per-chain wallet and RPC endpoint |
 | `RECAPTCHA_SECRET_KEY` | Server-side recaptcha verification |
