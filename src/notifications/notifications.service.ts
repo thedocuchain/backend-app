@@ -101,6 +101,8 @@ export class NotificationsService {
               user_id: user.id,
               document_id: document.id,
             } as any,
+            track_opens: false,
+            track_clicks: false,
             ...(attachments ? { attachments } : {}),
           },
         });
