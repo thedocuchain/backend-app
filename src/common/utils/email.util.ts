@@ -6,6 +6,14 @@ import {
 } from '../enums/entities.enum';
 import { ReadDocumentDto } from '../../documents/dto/read-document.dto';
 
+function escapeHtmlAttribute(value: string): string {
+  return value
+    .replace(/&/g, '&amp;')
+    .replace(/"/g, '&quot;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
+}
+
 function getBlockchainExplorerUrl(
   blockchain: BlockchainTypes,
   hash: string,
@@ -73,6 +81,8 @@ export function generateEmailTemplate(
       'linear-gradient(rgba(245,253,241,0.5) 0%, rgba(245,253,241,1) 100%)';
   }
 
+  const safeLink = escapeHtmlAttribute(link);
+
   const signers = document.users
     .filter((user) => user.role === UserRoles.SIGNER)
     .map(
@@ -120,7 +130,7 @@ export function generateEmailTemplate(
     downloadButtonBlock = `  <table align="center" width="100%" border="0" cellPadding="0" cellSpacing="0" role="presentation">
                       <tbody style="width:100%">
                         <tr style="width:100%">
-                          <td align="center" valign="bottom" data-id="__react-email-column"><a href=${link} style="line-height:100%;text-decoration:none;display:block;max-width:230px;width:230px;max-height:44px;height:fit-content;padding:10px 24px 10px 24px;border-radius:6px;border:1px solid #9FE870;background:#9FE870;box-shadow:0px 1px 2px 0px rgba(16, 24, 40, 0.05);cursor:pointer;margin-bottom:24px" target="_blank"><span><!--[if mso]><i style="letter-spacing: 24px;mso-font-width:-100%;mso-text-raise:15" hidden>&nbsp;</i><![endif]--></span><span style="max-width:100%;display:inline-block;line-height:120%;mso-padding-alt:0px;mso-text-raise:7.5px"><p style="font-size:16px;line-height:24px;margin:0;display:block;font-weight:600;width:100%;color:#000;letter-spacing:0.32px;white-space:nowrap">Download document<span style="margin-left:6px;text-decoration:underline;display:inline-block">↓</span></p></span><span><!--[if mso]><i style="letter-spacing: 24px;mso-font-width:-100%" hidden>&nbsp;</i><![endif]--></span></a></td>
+                          <td align="center" valign="bottom" data-id="__react-email-column"><a href="${safeLink}" style="line-height:100%;text-decoration:none;display:block;max-width:230px;width:230px;max-height:44px;height:fit-content;padding:10px 24px 10px 24px;border-radius:6px;border:1px solid #9FE870;background:#9FE870;box-shadow:0px 1px 2px 0px rgba(16, 24, 40, 0.05);cursor:pointer;margin-bottom:24px" target="_blank"><span><!--[if mso]><i style="letter-spacing: 24px;mso-font-width:-100%;mso-text-raise:15" hidden>&nbsp;</i><![endif]--></span><span style="max-width:100%;display:inline-block;line-height:120%;mso-padding-alt:0px;mso-text-raise:7.5px"><p style="font-size:16px;line-height:24px;margin:0;display:block;font-weight:600;width:100%;color:#000;letter-spacing:0.32px;white-space:nowrap">Download document<span style="margin-left:6px;text-decoration:underline;display:inline-block">↓</span></p></span><span><!--[if mso]><i style="letter-spacing: 24px;mso-font-width:-100%" hidden>&nbsp;</i><![endif]--></span></a></td>
                         </tr>
                       </tbody>
                     </table>`;
@@ -182,7 +192,7 @@ export function generateEmailTemplate(
             url(${imageLink})">
                         <tbody style="width:100%">
                           <tr style="width:100%">
-                            <td height="330" align="center" valign="bottom" data-id="__react-email-column"><a href="${link}" style="line-height:100%;text-decoration:none;display:inline-block;max-width:230px;width:230px;max-height:44px;height:fit-content;padding:10px 24px 10px 24px;border-radius:8px;border:1px solid #9FE870;background:#9FE870;box-shadow:0px 1px 2px 0px rgba(16, 24, 40, 0.05);cursor:pointer;margin-bottom:24px" target="_blank"><span><!--[if mso]><i style="letter-spacing: 24px;mso-font-width:-100%;mso-text-raise:15" hidden>&nbsp;</i><![endif]--></span><span style="max-width:100%;display:inline-block;line-height:120%;mso-padding-alt:0px;mso-text-raise:7.5px"><p style="font-size:16px;line-height:24px;margin:0;display:block;font-weight:600;width:100%;color:#000;letter-spacing:0.32px;white-space:nowrap">${buttonText}<span style="margin-left:6px">→</span></p></span><span><!--[if mso]><i style="letter-spacing: 24px;mso-font-width:-100%" hidden>&nbsp;</i><![endif]--></span></a></td>
+                            <td height="330" align="center" valign="bottom" data-id="__react-email-column"><a href="${safeLink}" style="line-height:100%;text-decoration:none;display:inline-block;max-width:230px;width:230px;max-height:44px;height:fit-content;padding:10px 24px 10px 24px;border-radius:8px;border:1px solid #9FE870;background:#9FE870;box-shadow:0px 1px 2px 0px rgba(16, 24, 40, 0.05);cursor:pointer;margin-bottom:24px" target="_blank"><span><!--[if mso]><i style="letter-spacing: 24px;mso-font-width:-100%;mso-text-raise:15" hidden>&nbsp;</i><![endif]--></span><span style="max-width:100%;display:inline-block;line-height:120%;mso-padding-alt:0px;mso-text-raise:7.5px"><p style="font-size:16px;line-height:24px;margin:0;display:block;font-weight:600;width:100%;color:#000;letter-spacing:0.32px;white-space:nowrap">${buttonText}<span style="margin-left:6px">→</span></p></span><span><!--[if mso]><i style="letter-spacing: 24px;mso-font-width:-100%" hidden>&nbsp;</i><![endif]--></span></a></td>
                           </tr>
                         </tbody>
                       </table>
