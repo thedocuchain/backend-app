@@ -25,6 +25,6 @@ export class VerificationCode {
   @Column('timestamptz', { nullable: true })
   consumedAt: Date;
 
-  @CreateDateColumn()
+  @CreateDateColumn({ type: 'timestamptz' })
   createdAt: Date;
 }
