@@ -14,6 +14,7 @@ const CODE_TTL_MS = 2 * 60 * 1000;
 const RESEND_COOLDOWN_MS = 60 * 1000;
 const RATE_LIMIT_WINDOW_MS = 90 * 60 * 1000;
 const MAX_CODES_PER_WINDOW = 4;
+const MAX_VERIFY_ATTEMPTS = 5;
 
 @Injectable()
 export class VerificationService {
@@ -42,6 +43,11 @@ export class VerificationService {
       throw new BadRequestException('Please wait before requesting a new code');
     }
 
+    await this.verificationCodeRepository.update(
+      { documentId, consumedAt: IsNull() },
+      { consumedAt: new Date(now) },
+    );
+
     const code = crypto.randomInt(0, 1_000_000).toString().padStart(6, '0');
     const entry = this.verificationCodeRepository.create({
       documentId,
@@ -59,14 +65,22 @@ export class VerificationService {
     const entry = await this.verificationCodeRepository.findOne({
       where: {
         documentId,
-        code,
         consumedAt: IsNull(),
         expiresAt: MoreThan(now),
       },
       order: { createdAt: 'DESC' },
     });
 
-    if (!entry) {
+    if (!entry || entry.attempts >= MAX_VERIFY_ATTEMPTS) {
+      return false;
+    }
+
+    if (entry.code !== code) {
+      entry.attempts += 1;
+      if (entry.attempts >= MAX_VERIFY_ATTEMPTS) {
+        entry.consumedAt = now;
+      }
+      await this.verificationCodeRepository.save(entry);
       return false;
     }
 

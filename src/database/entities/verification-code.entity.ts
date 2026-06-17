@@ -19,6 +19,9 @@ export class VerificationCode {
   @Column('varchar', { length: 6 })
   code: string;
 
+  @Column('integer', { default: 0 })
+  attempts: number;
+
   @Column('timestamptz')
   expiresAt: Date;
 
