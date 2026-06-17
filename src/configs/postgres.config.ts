@@ -5,6 +5,8 @@ import { Document } from '../database/entities/document.entity';
 import { Signature } from '../database/entities/signature.entity';
 import { Feedback } from '../database/entities/feedback.entity';
 import { AuditLog } from '../database/entities/auditLog.entity';
+import { VerificationCode } from '../database/entities/verification-code.entity';
+import { BlacklistedEmail } from '../database/entities/blacklisted-email.entity';
 
 export const getDatabaseConfig = async (
   configService: ConfigService,
@@ -18,7 +20,15 @@ export const getDatabaseConfig = async (
   autoLoadEntities: false,
   synchronize: false,
   migrationsTableName: 'migrations',
-  entities: [Document, User, Signature, Feedback, AuditLog],
+  entities: [
+    Document,
+    User,
+    Signature,
+    Feedback,
+    AuditLog,
+    VerificationCode,
+    BlacklistedEmail,
+  ],
   extra: {
     connectionTimeoutMillis: 5000,
     query_timeout: 60000,

@@ -10,7 +10,10 @@ import {
   NotifyStatuses,
   UserRoles,
 } from '../common/enums/entities.enum';
-import { generateEmailTemplate } from '../common/utils/email.util';
+import {
+  generateEmailTemplate,
+  generateVerificationCodeEmail,
+} from '../common/utils/email.util';
 import { MandrillEvent } from './interfaces/webhook.interface';
 import { UsersService } from '../users/users.service';
 import { AuthService } from '../auth/auth.service';
@@ -117,6 +120,22 @@ export class NotificationsService {
     await Promise.all(sendEmailPromises);
   }
 
+  async sendVerificationCode(email: string, code: string): Promise<void> {
+    const { subject, template } = generateVerificationCodeEmail(code);
+
+    await this.mailchimp.messages.send({
+      message: {
+        from_email: this.emailFrom,
+        from_name: this.emailFromName || undefined,
+        to: [{ email, type: 'to' }],
+        subject,
+        html: template,
+        track_opens: false,
+        track_clicks: false,
+      },
+    });
+  }
+
   private buildAttachments(
     document: ReadDocumentDto,
     file?: Buffer,
@@ -173,10 +192,8 @@ export class NotificationsService {
     const isDelivered = event.event === 'send' || event.event === 'deliver';
     if (!isFailure && !isDelivered) return;
 
-    const userId =
-      event.msg?.metadata?.user_id ?? event.msg?.tags?.[0];
-    const documentId =
-      event.msg?.metadata?.document_id ?? event.msg?.tags?.[1];
+    const userId = event.msg?.metadata?.user_id ?? event.msg?.tags?.[0];
+    const documentId = event.msg?.metadata?.document_id ?? event.msg?.tags?.[1];
     if (!userId) return;
 
     const notifyStatus = isFailure

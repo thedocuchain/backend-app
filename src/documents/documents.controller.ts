@@ -4,14 +4,18 @@ import {
   Post,
   UseInterceptors,
   Param,
+  Query,
   HttpCode,
   UploadedFile,
   Patch,
   Body,
   UseGuards,
   Request,
+  Res,
   Ip,
 } from '@nestjs/common';
+import { Response } from 'express';
+import { ConfigService } from '@nestjs/config';
 import { FileInterceptor } from '@nestjs/platform-express';
 import {
   ApiBearerAuth,
@@ -31,12 +35,17 @@ import { SignDocumentDto } from './dto/sign-document.dto';
 import { FindDocumentDto } from './dto/find-document.dto';
 import { SubscribeDocumentDto } from './dto/subscribe-document.dto';
 import { NotifyDocumentDto } from './dto/notify-document.dto';
+import { SendCodeDto } from './dto/send-code.dto';
+import { ConfirmCodeDto } from './dto/confirm-code.dto';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 
 @ApiTags('documents')
 @Controller('documents')
 export class DocumentsController {
-  constructor(private readonly documentsService: DocumentsService) {}
+  constructor(
+    private readonly documentsService: DocumentsService,
+    private readonly configService: ConfigService,
+  ) {}
 
   @Post('upload')
   @HttpCode(200)
@@ -110,6 +119,42 @@ export class DocumentsController {
     @Body() subscribeDocumentDto: SubscribeDocumentDto,
   ) {
     return this.documentsService.subscribe(id, subscribeDocumentDto);
+  }
+
+  @Post(':id/verify-initiator/send')
+  @HttpCode(200)
+  sendInitiatorCode(
+    @Param('id')
+    id: string,
+    @Body() sendCodeDto: SendCodeDto,
+  ) {
+    return this.documentsService.sendInitiatorCode(
+      id,
+      sendCodeDto.recaptchaToken,
+    );
+  }
+
+  @Post(':id/verify-initiator/confirm')
+  @HttpCode(200)
+  confirmInitiator(
+    @Param('id')
+    id: string,
+    @Body() confirmCodeDto: ConfirmCodeDto,
+  ) {
+    return this.documentsService.confirmInitiator(id, confirmCodeDto.code);
+  }
+
+  @Get(':id/report')
+  async report(
+    @Param('id')
+    id: string,
+    @Query('userId') userId: string,
+    @Query('token') token: string,
+    @Res() res: Response,
+  ) {
+    await this.documentsService.report(id, userId, token);
+    const clientUrl = this.configService.get('CLIENT_APP_REDIRECT_URL');
+    return res.redirect(302, `${clientUrl}/doc/status/${id}?reported=true`);
   }
 
   @Post(':id/notify')

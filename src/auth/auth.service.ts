@@ -57,4 +57,15 @@ export class AuthService {
     }
     return payload.exp * 1000 < Date.now();
   }
+
+  async verifyReportToken(token: string): Promise<JwtPayload> {
+    try {
+      return await this.jwtService.verifyAsync<JwtPayload>(token, {
+        secret: this.secret,
+        ignoreExpiration: true,
+      });
+    } catch (error) {
+      throw new BadRequestException('Invalid token.');
+    }
+  }
 }

@@ -1,0 +1,78 @@
+import {
+  BadRequestException,
+  HttpException,
+  HttpStatus,
+  Injectable,
+} from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
+import { IsNull, MoreThan, Repository } from 'typeorm';
+import * as crypto from 'crypto';
+
+import { VerificationCode } from '../database/entities/verification-code.entity';
+
+const CODE_TTL_MS = 2 * 60 * 1000;
+const RESEND_COOLDOWN_MS = 60 * 1000;
+const RATE_LIMIT_WINDOW_MS = 90 * 60 * 1000;
+const MAX_CODES_PER_WINDOW = 4;
+
+@Injectable()
+export class VerificationService {
+  constructor(
+    @InjectRepository(VerificationCode)
+    private readonly verificationCodeRepository: Repository<VerificationCode>,
+  ) {}
+
+  async issueCode(documentId: string, email: string): Promise<string> {
+    const lowerCasedEmail = email.toLowerCase();
+    const now = Date.now();
+
+    const windowStart = new Date(now - RATE_LIMIT_WINDOW_MS);
+    const sentInWindow = await this.verificationCodeRepository.count({
+      where: { email: lowerCasedEmail, createdAt: MoreThan(windowStart) },
+    });
+    if (sentInWindow >= MAX_CODES_PER_WINDOW) {
+      throw new HttpException('Too many codes', HttpStatus.TOO_MANY_REQUESTS);
+    }
+
+    const lastCode = await this.verificationCodeRepository.findOne({
+      where: { documentId },
+      order: { createdAt: 'DESC' },
+    });
+    if (lastCode && now - lastCode.createdAt.getTime() < RESEND_COOLDOWN_MS) {
+      throw new BadRequestException('Please wait before requesting a new code');
+    }
+
+    const code = crypto.randomInt(0, 1_000_000).toString().padStart(6, '0');
+    const entry = this.verificationCodeRepository.create({
+      documentId,
+      email: lowerCasedEmail,
+      code,
+      expiresAt: new Date(now + CODE_TTL_MS),
+    });
+    await this.verificationCodeRepository.save(entry);
+
+    return code;
+  }
+
+  async validate(documentId: string, code: string): Promise<boolean> {
+    const now = new Date();
+    const entry = await this.verificationCodeRepository.findOne({
+      where: {
+        documentId,
+        code,
+        consumedAt: IsNull(),
+        expiresAt: MoreThan(now),
+      },
+      order: { createdAt: 'DESC' },
+    });
+
+    if (!entry) {
+      return false;
+    }
+
+    entry.consumedAt = now;
+    await this.verificationCodeRepository.save(entry);
+
+    return true;
+  }
+}

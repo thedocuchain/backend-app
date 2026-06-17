@@ -2,6 +2,7 @@ import {
   IsArray,
   IsDateString,
   IsInt,
+  IsOptional,
   IsString,
   IsUUID,
 } from 'class-validator';
@@ -110,6 +111,14 @@ export class ReadDocumentDto {
   size: number;
 
   checkSum: string;
+
+  @ApiProperty({
+    example: '2021-01-20T12:00:00.000Z',
+    required: false,
+  })
+  @IsOptional()
+  @IsDateString()
+  initiatorVerifiedAt: Date;
 
   @ApiProperty({
     example: '2021-01-20T12:00:00.000Z',

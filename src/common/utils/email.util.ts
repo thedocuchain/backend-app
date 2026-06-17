@@ -83,11 +83,30 @@ export function generateEmailTemplate(
 
   const safeLink = escapeHtmlAttribute(link);
 
+  const apiUrl = 'https://api.docuchain.io/v1';
+  const reportLink = `${apiUrl}/documents/${document.id}/report?userId=${user.id}&token=${token}`;
+  const safeReportLink = escapeHtmlAttribute(reportLink);
+  const showReport =
+    document.status !== DocumentStatuses.COMPLETED &&
+    document.status !== DocumentStatuses.BLOCKCHAINED;
+  const reportBlock = showReport
+    ? `<table align="center" width="100%" border="0" cellPadding="0" cellSpacing="0" role="presentation" style="margin-bottom:20px">
+                      <tbody style="width:100%">
+                        <tr style="width:100%">
+                          <td align="center" data-id="__react-email-column">
+                            <p style="font-size:16px;line-height:24px;margin:0 0 12px 0;font-weight:600;color:#000;text-align:center">Unknown sender or document?<br />Report it to our team.</p>
+                            <a href="${safeReportLink}" style="line-height:100%;text-decoration:none;display:inline-block;max-width:280px;width:280px;height:fit-content;padding:12px 24px;border-radius:8px;border:1px solid #EB8F8F;background:#EB8F8F;box-shadow:0px 1px 2px 0px rgba(16, 24, 40, 0.05);cursor:pointer" target="_blank"><span style="max-width:100%;display:inline-block;line-height:120%"><p style="font-size:16px;line-height:24px;margin:0;display:block;font-weight:600;width:100%;color:#000;letter-spacing:0.32px;text-align:center">Report message</p></span></a>
+                          </td>
+                        </tr>
+                      </tbody>
+                    </table>`
+    : '';
+
   const signers = document.users
     .filter((user) => user.role === UserRoles.SIGNER)
     .map(
       (user, index) =>
-        `<p style="font-size:14px;line-height:24px;margin:0;color:#000">${index + 1}. ${user.name} <a href="mailto:${user.email}" style="color:#067df7;text-decoration:none" target="_blank">(${user.email})</a></p>`,
+        `<p style="font-size:14px;line-height:24px;margin:0;color:#000">${index + 1}. ${user.name} <a href="mailto:${user.email}" style="color:#067df7;text-decoration:none" target="_blank">(${user.email})</a>${user.isInitiator ? ' -initiator of signing' : ''}</p>`,
     )
     .join('');
 
@@ -221,6 +240,7 @@ export function generateEmailTemplate(
               <tbody>
                 <tr>
                   <td>
+                  ${reportBlock}
                   ${hashBlock}
                     <table align="left" width="100%" border="0" cellPadding="0" cellSpacing="0" role="presentation" style="margin-bottom:9px">
                       <tbody style="width:100%">
@@ -275,6 +295,87 @@ export function generateEmailTemplate(
     </td>
     </tr>
     </tbody>
+    </table>
+  </body>
+</html>`,
+  };
+}
+
+export function generateVerificationCodeEmail(code: string): {
+  subject: string;
+  template: string;
+} {
+  const clientUrl = 'https://docuchain.io';
+  const logoUrl = 'https://docuchain.io/app/assets/logo.png';
+  const subject = 'Your DocuChain verification code';
+
+  return {
+    subject,
+    template: `<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html style="font-family:Inter;background-color:#F6F9FC" dir="ltr" lang="en">
+  <head>
+    <meta content="text/html; charset=UTF-8" http-equiv="Content-Type" />
+    <style>
+      @font-face {
+        font-family: 'Inter';
+        font-style: normal;
+        font-weight: 400;
+        mso-font-alt: 'Helvetica';
+        src: url(https://fonts.gstatic.com/s/inter/v13/UcC73FwrK3iLTeHuS_fvQtMwCp50KnMa2JL7W0Q5n-wU.woff2) format('woff2');
+      }
+      * {
+        font-family: 'Inter', Helvetica;
+      }
+    </style>
+  </head>
+  <body style="background-color:#F6F9FC">
+    <div style="display: none; max-height: 0px; overflow: hidden;">
+      Your DocuChain verification code is ${code}
+    </div>
+    <table align="center" width="100%" border="0" cellPadding="0" cellSpacing="0" role="presentation" style="max-width:37.5em">
+      <tbody>
+        <tr style="width:100%">
+          <td>
+            <table align="center" width="100%" border="0" cellPadding="0" cellSpacing="0" role="presentation" style="margin:40px auto 12px;max-width:600px;width:100%;min-width:300px;background-color:#FFFFFF;border:1px solid #D0D5DD;border-radius:16px;padding:20px 24px 20px">
+              <tbody>
+                <tr>
+                  <td>
+                    <table align="center" width="100%" border="0" cellPadding="0" cellSpacing="0" role="presentation" style="width:100%;margin:18px 0">
+                      <tbody>
+                        <tr>
+                          <td align="left" width="150" data-id="__react-email-column"><a href=${clientUrl} style="color:#067df7;text-decoration:none" target="_blank"><img alt="" src="${logoUrl}" style="display:block;outline:none;border:none;text-decoration:none" width="151" /></a></td>
+                        </tr>
+                      </tbody>
+                    </table>
+                    <hr style="width:100%;border:none;border-top:1px solid #eaeaea;margin:0 0 20px 0" />
+                    <p style="font-size:20px;line-height:27px;margin:0 0 8px 0;font-weight:600;color:#000">Verify the initiator</p>
+                    <p style="font-size:14px;line-height:24px;margin:0 0 20px 0;color:#626C7F">Use the code below to confirm the initiator's email and continue sending your document.</p>
+                    <table align="center" width="100%" border="0" cellPadding="0" cellSpacing="0" role="presentation" style="margin:0 0 16px 0">
+                      <tbody style="width:100%">
+                        <tr style="width:100%">
+                          <td align="center" data-id="__react-email-column">
+                            <p style="font-size:40px;line-height:48px;margin:0;font-weight:700;letter-spacing:10px;color:#000">${code}</p>
+                          </td>
+                        </tr>
+                      </tbody>
+                    </table>
+                    <p style="font-size:14px;line-height:20px;margin:0;color:#626C7F;letter-spacing:0.28px">This code expires in 2 minutes. If you didn't request it, you can safely ignore this email.</p>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+    <table align="center" width="100%" border="0" cellPadding="0" cellSpacing="0" role="presentation">
+      <tbody style="width:100%">
+        <tr style="width:100%">
+          <td align="center" data-id="__react-email-column">
+            <p style="font-size:14px;line-height:24px;margin:0 0 32px 0;color:#626C7F"><a href=${clientUrl} style="color:#626C7F;text-decoration:underline" target="_blank">DocuChain.io</a></p>
+          </td>
+        </tr>
+      </tbody>
     </table>
   </body>
 </html>`,

@@ -72,6 +72,9 @@ export class Document {
   @Column('text', { nullable: true })
   checkSum: string;
 
+  @Column('timestamptz', { nullable: true })
+  initiatorVerifiedAt: Date;
+
   @CreateDateColumn()
   createdAt: Date;
 

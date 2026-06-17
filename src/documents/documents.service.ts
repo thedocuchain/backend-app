@@ -47,6 +47,8 @@ import { BlockchainService } from '../blockchain/blockchain.service';
 import { AuditLogsService } from '../audit-logs/audit-logs.service';
 import { TransformFormatService } from '../transform-format/transform-format.service';
 import { RecaptchaService } from '../recaptcha/recaptcha.service';
+import { BlacklistService } from '../blacklist/blacklist.service';
+import { VerificationService } from '../verification/verification.service';
 
 @Injectable()
 export class DocumentsService {
@@ -67,6 +69,8 @@ export class DocumentsService {
     private readonly eventEmitter: EventEmitter2,
     private readonly transformFormatService: TransformFormatService,
     private readonly recaptchaService: RecaptchaService,
+    private readonly blacklistService: BlacklistService,
+    private readonly verificationService: VerificationService,
   ) {}
   public async upload(file: Express.Multer.File): Promise<UploadDocumentDto> {
     if (!file) {
@@ -162,6 +166,16 @@ export class DocumentsService {
     if (existingUsers.length > 0) {
       throw new BadRequestException(
         'One or more users already exist for this document.',
+      );
+    }
+
+    const initiator = users.find((user) => user.isInitiator);
+    if (
+      initiator &&
+      (await this.blacklistService.isBlacklisted(initiator.email))
+    ) {
+      throw new BadRequestException(
+        'This sender is blocked from sending documents.',
       );
     }
 
@@ -580,12 +594,74 @@ export class DocumentsService {
       }
       await this.notificationsService.sendEmail(document, user);
     } else {
+      const initiator = document.users.find((user) => user.isInitiator);
+      if (initiator && !document.initiatorVerifiedAt) {
+        throw new BadRequestException('Initiator is not verified.');
+      }
+
       await this.notificationsService.sendEmail(document);
 
       if (document.status === DocumentStatuses.RECIPIENT_ADDED) {
         await this.update(id, { status: DocumentStatuses.SENT });
       }
     }
+  }
+
+  public async sendInitiatorCode(
+    id: string,
+    recaptchaToken: string,
+  ): Promise<void> {
+    const isHuman = await this.recaptchaService.verify(recaptchaToken);
+    if (!isHuman) {
+      throw new BadRequestException('reCAPTCHA verification failed');
+    }
+
+    const document = await this.findOne(id);
+    const initiator = document.users.find((user) => user.isInitiator);
+    if (!initiator) {
+      throw new BadRequestException('Initiator is not found.');
+    }
+
+    const code = await this.verificationService.issueCode(
+      document.id,
+      initiator.email,
+    );
+
+    await this.notificationsService.sendVerificationCode(initiator.email, code);
+  }
+
+  public async confirmInitiator(id: string, code: string): Promise<void> {
+    const document = await this.findOne(id);
+    const initiator = document.users.find((user) => user.isInitiator);
+    if (!initiator) {
+      throw new BadRequestException('Initiator is not found.');
+    }
+
+    const isValid = await this.verificationService.validate(document.id, code);
+    if (!isValid) {
+      throw new BadRequestException('Invalid or expired code.');
+    }
+
+    await this.update(id, { initiatorVerifiedAt: new Date() });
+  }
+
+  public async report(
+    id: string,
+    userId: string,
+    token: string,
+  ): Promise<void> {
+    const payload = await this.authService.verifyReportToken(token);
+    if (payload.documentId !== id || payload.userId !== userId) {
+      throw new BadRequestException('Invalid token.');
+    }
+
+    const document = await this.findOne(id);
+    const initiator = document.users.find((user) => user.isInitiator);
+    if (!initiator) {
+      throw new BadRequestException('Initiator is not found.');
+    }
+
+    await this.blacklistService.add(initiator.email, 'reported via email');
   }
 
   async subscribe(

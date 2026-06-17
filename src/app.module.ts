@@ -19,6 +19,8 @@ import { EventEmitterModule } from '@nestjs/event-emitter';
 import { RecaptchaModule } from './recaptcha/recaptcha.module';
 import { AuditLogsModule } from './audit-logs/audit-logs.module';
 import { TransformFormatModule } from './transform-format/transform-format.module';
+import { BlacklistModule } from './blacklist/blacklist.module';
+import { VerificationModule } from './verification/verification.module';
 import { LoggerMiddleware } from './common/logger.middleware';
 
 @Module({
@@ -45,6 +47,8 @@ import { LoggerMiddleware } from './common/logger.middleware';
     RecaptchaModule,
     AuditLogsModule,
     TransformFormatModule,
+    BlacklistModule,
+    VerificationModule,
   ],
   providers: [],
 })

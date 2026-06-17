@@ -65,6 +65,14 @@ export class CreateUserDto {
   firstToHear: boolean;
 
   @ApiProperty({
+    example: false,
+    description: 'Marks the recipient who created and sends the document',
+  })
+  @IsBoolean()
+  @IsOptional()
+  isInitiator?: boolean;
+
+  @ApiProperty({
     example: UserRoles.WATCHER,
   })
   @IsNotEmpty()

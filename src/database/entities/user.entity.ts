@@ -31,6 +31,9 @@ export class User {
   @Column('boolean', { default: false })
   firstToHear: boolean;
 
+  @Column('boolean', { default: false })
+  isInitiator: boolean;
+
   @Column('text', { nullable: true })
   checkSum: string;
 
