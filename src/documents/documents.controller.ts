@@ -144,10 +144,31 @@ export class DocumentsController {
     return this.documentsService.confirmInitiator(id, confirmCodeDto.code);
   }
 
+  // Email "Report" buttons are plain links, so email security scanners
+  // (Safe Links, Proofpoint, Mimecast, …) and link-preview bots auto-fetch
+  // them with a GET. To avoid auto-reporting the initiator, GET is
+  // non-mutating: it only validates the link and renders a confirmation page.
+  // The actual report happens on POST, triggered by a human clicking the
+  // button on that page — scanners GET links but never submit forms.
   @Get(':id/report')
+  async reportConfirmation(
+    @Param('id') id: string,
+    @Query('userId') userId: string,
+    @Query('token') token: string,
+    @Res() res: Response,
+  ) {
+    try {
+      await this.documentsService.verifyReportRequest(id, userId, token);
+    } catch {
+      res.status(400).type('html').send(this.renderInvalidReportLinkPage());
+      return;
+    }
+    res.type('html').send(this.renderReportConfirmationPage());
+  }
+
+  @Post(':id/report')
   async report(
-    @Param('id')
-    id: string,
+    @Param('id') id: string,
     @Query('userId') userId: string,
     @Query('token') token: string,
     @Res() res: Response,
@@ -155,6 +176,73 @@ export class DocumentsController {
     await this.documentsService.report(id, userId, token);
     const clientUrl = this.configService.get('CLIENT_APP_REDIRECT_URL');
     return res.redirect(302, `${clientUrl}/doc/status/${id}?reported=true`);
+  }
+
+  private renderReportConfirmationPage(): string {
+    // The form has no `action`, so it POSTs to the current URL — preserving the
+    // ?userId=&token= query string that the POST handler reads.
+    return `<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="robots" content="noindex" />
+<title>Report sender — DocuChain</title>
+<style>
+  :root { color-scheme: light; }
+  body { margin: 0; min-height: 100vh; display: flex; align-items: center; justify-content: center;
+    background: #f5f6f8; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; color: #101828; padding: 24px; }
+  .card { background: #fff; max-width: 440px; width: 100%; padding: 32px; border-radius: 16px;
+    box-shadow: 0 4px 24px rgba(16, 24, 40, 0.08); text-align: center; }
+  h1 { font-size: 20px; margin: 0 0 12px; }
+  p { font-size: 15px; line-height: 22px; color: #475467; margin: 0 0 24px; }
+  button { width: 100%; padding: 12px 24px; border-radius: 8px; border: 1px solid #EB8F8F;
+    background: #EB8F8F; color: #101828; font-size: 16px; font-weight: 600; cursor: pointer; }
+  button:hover { background: #e57e7e; }
+  .cancel { display: inline-block; margin-top: 16px; font-size: 14px; color: #667085; text-decoration: none; }
+  .cancel:hover { text-decoration: underline; }
+</style>
+</head>
+<body>
+  <main class="card">
+    <h1>Report this sender?</h1>
+    <p>If you don't recognise this sender or document, report it to the DocuChain team. We'll review it and may block the sender from sending further documents.</p>
+    <form method="post">
+      <button type="submit">Yes, report this sender</button>
+    </form>
+    <a class="cancel" href="https://docuchain.io">Cancel</a>
+  </main>
+</body>
+</html>`;
+  }
+
+  private renderInvalidReportLinkPage(): string {
+    return `<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="robots" content="noindex" />
+<title>Invalid link — DocuChain</title>
+<style>
+  body { margin: 0; min-height: 100vh; display: flex; align-items: center; justify-content: center;
+    background: #f5f6f8; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; color: #101828; padding: 24px; }
+  .card { background: #fff; max-width: 440px; width: 100%; padding: 32px; border-radius: 16px;
+    box-shadow: 0 4px 24px rgba(16, 24, 40, 0.08); text-align: center; }
+  h1 { font-size: 20px; margin: 0 0 12px; }
+  p { font-size: 15px; line-height: 22px; color: #475467; margin: 0 0 24px; }
+  a { color: #667085; font-size: 14px; text-decoration: none; }
+  a:hover { text-decoration: underline; }
+</style>
+</head>
+<body>
+  <main class="card">
+    <h1>This report link is invalid or has expired</h1>
+    <p>The link you followed could not be verified. No action has been taken.</p>
+    <a href="https://docuchain.io">Go to DocuChain</a>
+  </main>
+</body>
+</html>`;
   }
 
   @Post(':id/notify')

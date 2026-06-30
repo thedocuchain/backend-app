@@ -21,7 +21,11 @@ export class BlacklistService {
     return count > 0;
   }
 
-  async add(email: string, reason?: string): Promise<void> {
+  async add(
+    email: string,
+    reason?: string,
+    meta?: { reportedByUserId?: string; documentId?: string },
+  ): Promise<void> {
     if (!email) {
       return;
     }
@@ -32,6 +36,8 @@ export class BlacklistService {
     const entry = this.blacklistRepository.create({
       email: lowerCasedEmail,
       reason,
+      reportedByUserId: meta?.reportedByUserId ?? null,
+      documentId: meta?.documentId ?? null,
     });
     await this.blacklistRepository.save(entry);
   }

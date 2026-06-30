@@ -645,11 +645,40 @@ export class DocumentsService {
     await this.update(id, { initiatorVerifiedAt: new Date() });
   }
 
+  // Validates a report link without mutating anything. Used to render the
+  // confirmation page on GET, so automated email/link scanners that fetch the
+  // link never blacklist anyone — only an explicit POST (a human click) does.
+  public async verifyReportRequest(
+    id: string,
+    userId: string,
+    token: string,
+  ): Promise<{ documentName: string }> {
+    const { document } = await this.resolveReportTarget(id, userId, token);
+    return { documentName: document.name };
+  }
+
   public async report(
     id: string,
     userId: string,
     token: string,
   ): Promise<void> {
+    const { document, initiator } = await this.resolveReportTarget(
+      id,
+      userId,
+      token,
+    );
+
+    await this.blacklistService.add(initiator.email, 'reported via email', {
+      reportedByUserId: userId,
+      documentId: document.id,
+    });
+  }
+
+  private async resolveReportTarget(
+    id: string,
+    userId: string,
+    token: string,
+  ): Promise<{ document: ReadDocumentDto; initiator: User }> {
     const payload = await this.authService.verifyReportToken(token);
     if (payload.documentId !== id || payload.userId !== userId) {
       throw new BadRequestException('Invalid token.');
@@ -661,7 +690,7 @@ export class DocumentsService {
       throw new BadRequestException('Initiator is not found.');
     }
 
-    await this.blacklistService.add(initiator.email, 'reported via email');
+    return { document, initiator };
   }
 
   async subscribe(
