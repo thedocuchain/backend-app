@@ -1,8 +1,13 @@
-import { Injectable, InternalServerErrorException } from '@nestjs/common';
+import {
+  Injectable,
+  InternalServerErrorException,
+  Logger,
+} from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 
 @Injectable()
 export class RecaptchaService {
+  private readonly logger = new Logger(RecaptchaService.name);
   private readonly secretKey: string;
   constructor(configService: ConfigService) {
     this.secretKey = configService.get<string>('RECAPTCHA_SECRET_KEY');
@@ -17,10 +22,18 @@ export class RecaptchaService {
 
       const data = await response.json();
 
-      if (data.score !== undefined) {
-        return data.success && data.score > 0.5;
+      const isHuman =
+        data.score !== undefined
+          ? data.success && data.score > 0.5
+          : data.success;
+
+      if (!isHuman) {
+        this.logger.warn(
+          `reCAPTCHA rejected: success=${data.success} score=${data.score} action=${data.action} hostname=${data.hostname} errors=${JSON.stringify(data['error-codes'])} tokenLength=${recaptchaToken?.length}`,
+        );
       }
-      return data.success;
+
+      return isHuman;
     } catch (error) {
       console.error('Recaptcha verification failed:', error.message);
       throw new InternalServerErrorException('Recaptcha verification failed');
