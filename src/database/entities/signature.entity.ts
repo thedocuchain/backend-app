@@ -19,6 +19,9 @@ export class Signature {
   @Column('text', { nullable: true })
   signFont: string;
 
+  @Column('text', { nullable: true })
+  signImage: string;
+
   @Column('integer', { nullable: true })
   fontSize: number;
 

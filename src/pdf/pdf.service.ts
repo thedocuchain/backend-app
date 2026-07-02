@@ -211,18 +211,11 @@ export class PdfService {
     pdfDoc.registerFontkit(fontkit);
 
     const signatureFontName = user.signatures[0].signFont;
+    const signatureImage = user.signatures[0].signImage;
     const username = user.name;
     const signatureDate = format(user.signatures[0].signDate, 'MM.dd.yyyy');
     const page = user.signatures[0].pageNumber;
     const yCord = user.signatures[0].yCoordinate;
-
-    let fontBytes = await this.fetchFontBytes(signatureFontName);
-
-    if (isCyrillic(username)) {
-      fontBytes = await this.fetchFontBytes('marck-script-regular');
-    }
-
-    const customFont = await pdfDoc.embedFont(fontBytes);
 
     const defaultFontBytes = await this.readDefaultFontBytes('default');
     const defaultFont = await pdfDoc.embedFont(defaultFontBytes);
@@ -233,6 +226,37 @@ export class PdfService {
     const pageSize = pdfDoc.getPages()[0].getSize();
     const dateFormX = pageSize.width / 2 - 25;
     const signatureFormX = Math.round((pageSize.width * 2) / 3);
+
+    if (signatureImage) {
+      const image = await this.embedSignatureImage(pdfDoc, signatureImage);
+      const scale = Math.min(150 / image.width, 50 / image.height, 1);
+      const width = image.width * scale;
+      const height = image.height * scale;
+
+      pdfDoc.getPages()[page - 1].drawImage(image, {
+        x: signatureFormX,
+        y: yCord - Math.max(0, (height - signatureFontSize) / 2),
+        width,
+        height,
+      });
+      pdfDoc.getPages()[page - 1].drawText(`${signatureDate}`, {
+        x: dateFormX,
+        y: yCord,
+        size: dateFontSize,
+        font: defaultFont,
+        color: rgb(0, 0, 0),
+      });
+
+      return pdfDoc;
+    }
+
+    let fontBytes = await this.fetchFontBytes(signatureFontName);
+
+    if (isCyrillic(username)) {
+      fontBytes = await this.fetchFontBytes('marck-script-regular');
+    }
+
+    const customFont = await pdfDoc.embedFont(fontBytes);
     const usernameWidth = customFont.widthOfTextAtSize(
       user.name,
       signatureFontSize,
@@ -482,11 +506,57 @@ export class PdfService {
     );
 
     const signerSectionHeight = 105;
-    await Promise.all(
-      signers.map(async (user) => {
-        const signatureFontSize = user.signatures[0]?.fontSize ?? 22;
-        const signatureFont =
-          user.signatures[0]?.signFont ?? 'italianno-regular';
+    for (const user of signers) {
+      const signatureFontSize = user.signatures[0]?.fontSize ?? 22;
+      const signatureFont = user.signatures[0]?.signFont ?? 'italianno-regular';
+      const signatureImage = user.signatures[0]?.signImage;
+
+      page.drawText(`${user.email}`, {
+        x: leftX,
+        y: yCord,
+        size: fontSize,
+        font: defaultFontBold,
+      });
+
+      page.drawText(`User ID: ${user.id}`, {
+        x: leftX,
+        y: yCord - 20,
+        size: fontSize,
+        font: defaultFont,
+      });
+
+      page.drawText(`IP: ${user.ip}`, {
+        x: leftX,
+        y: yCord - 40,
+        size: fontSize,
+        font: defaultFont,
+      });
+
+      page.drawText(`User Agent: ${user.userAgent?.slice(0, -30)}`, {
+        x: leftX,
+        y: yCord - 60,
+        size: fontSize,
+        font: defaultFont,
+      });
+
+      page.drawText('Signature:', {
+        x: leftX,
+        y: yCord - 80,
+        size: fontSize,
+        font: defaultFont,
+      });
+
+      if (signatureImage) {
+        const image = await this.embedSignatureImage(pdfDoc, signatureImage);
+        const scale = Math.min(150 / image.width, 26 / image.height, 1);
+
+        page.drawImage(image, {
+          x: leftX + 50,
+          y: yCord - 88,
+          width: image.width * scale,
+          height: image.height * scale,
+        });
+      } else {
         let fontBytes = await this.fetchFontBytes(signatureFont);
 
         if (isCyrillic(user.name)) {
@@ -494,63 +564,28 @@ export class PdfService {
         }
         const customFont = await pdfDoc.embedFont(fontBytes);
 
-        page.drawText(`${user.email}`, {
-          x: leftX,
-          y: yCord,
-          size: fontSize,
-          font: defaultFontBold,
-        });
-
-        page.drawText(`User ID: ${user.id}`, {
-          x: leftX,
-          y: yCord - 20,
-          size: fontSize,
-          font: defaultFont,
-        });
-
-        page.drawText(`IP: ${user.ip}`, {
-          x: leftX,
-          y: yCord - 40,
-          size: fontSize,
-          font: defaultFont,
-        });
-
-        page.drawText(`User Agent: ${user.userAgent?.slice(0, -30)}`, {
-          x: leftX,
-          y: yCord - 60,
-          size: fontSize,
-          font: defaultFont,
-        });
-
-        page.drawText('Signature:', {
-          x: leftX,
-          y: yCord - 80,
-          size: fontSize,
-          font: defaultFont,
-        });
-
         page.drawText(`${user.name}`, {
           x: leftX + 50,
           y: yCord - 80,
           size: signatureFontSize,
           font: customFont,
         });
+      }
 
-        page.drawLine({
-          start: { x: 30, y: yCord - 90 },
-          end: { x: 565, y: yCord - 90 },
-          thickness: 1,
-          color: rgb(0, 0, 0),
-        });
-        yCord = yCord - signerSectionHeight;
+      page.drawLine({
+        start: { x: 30, y: yCord - 90 },
+        end: { x: 565, y: yCord - 90 },
+        thickness: 1,
+        color: rgb(0, 0, 0),
+      });
+      yCord = yCord - signerSectionHeight;
 
-        if (yCord - signerSectionHeight < 0) {
-          pdfDoc.addPage([595, 842]);
-          yCord = 800;
-          page = pdfDoc.getPage(pdfDoc.getPages().length - 1);
-        }
-      }),
-    );
+      if (yCord - signerSectionHeight < 0) {
+        pdfDoc.addPage([595, 842]);
+        yCord = 800;
+        page = pdfDoc.getPage(pdfDoc.getPages().length - 1);
+      }
+    }
     yCord -= 5;
 
     page.drawText('Event Log', {
@@ -588,6 +623,23 @@ export class PdfService {
     );
 
     return Buffer.from(await pdfDoc.save());
+  }
+
+  private async embedSignatureImage(
+    pdfDoc: PDFDocument,
+    dataUrl: string,
+  ): Promise<PDFImage> {
+    const match = dataUrl.match(/^data:image\/(png|jpeg);base64,(.+)$/);
+
+    if (!match) {
+      throw new Error('Unsupported signature image format');
+    }
+
+    const imageBytes = Buffer.from(match[2], 'base64');
+
+    return match[1] === 'png'
+      ? pdfDoc.embedPng(imageBytes)
+      : pdfDoc.embedJpg(imageBytes);
   }
 
   async fetchFontBytes(signatureFont: string): Promise<ArrayBuffer> {

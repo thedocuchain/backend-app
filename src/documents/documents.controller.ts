@@ -99,7 +99,7 @@ export class DocumentsController {
     @Param('id')
     id: string,
   ) {
-    return this.documentsService.findOne(id);
+    return this.documentsService.findOnePublic(id);
   }
 
   @Get(':id/download')

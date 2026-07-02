@@ -232,6 +232,21 @@ export class DocumentsService {
     };
   }
 
+  public async findOnePublic(id: string): Promise<ReadDocumentDto> {
+    const document = await this.findOne(id);
+
+    return {
+      ...document,
+      users: document.users?.map((user) => ({
+        ...user,
+        signatures: user.signatures?.map((signature) => ({
+          ...signature,
+          signImage: null,
+        })),
+      })),
+    };
+  }
+
   public async checkStatus(
     findDocumentDto: FindDocumentDto,
   ): Promise<UploadDocumentDto> {
@@ -382,6 +397,7 @@ export class DocumentsService {
           ...user.signatures[0],
           signed: signature.signed,
           signFont: signature.signFont,
+          signImage: signature.signImage ?? null,
           signDate: signature.signDate,
           notified: true,
           lastNotifyDate: signature.signDate,
@@ -450,6 +466,7 @@ export class DocumentsService {
       await queryRunner.manager.update(Signature, signatureId, {
         signed: signature.signed,
         signFont: signature.signFont,
+        signImage: signature.signImage ?? null,
         signDate: signature.signDate,
         fontSize: signature.fontSize,
       });
