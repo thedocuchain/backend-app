@@ -24,7 +24,7 @@ export class RecaptchaService {
 
       const isHuman =
         data.score !== undefined
-          ? data.success && data.score > 0.5
+          ? data.success && data.score >= 0.5
           : data.success;
 
       if (!isHuman) {
