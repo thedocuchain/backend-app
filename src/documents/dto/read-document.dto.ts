@@ -122,6 +122,20 @@ export class ReadDocumentDto {
 
   @ApiProperty({
     example: '2021-01-20T12:00:00.000Z',
+    required: false,
+  })
+  @IsOptional()
+  @IsDateString()
+  sentAt: Date;
+
+  @ApiProperty({
+    example: 0,
+  })
+  @IsInt()
+  remindersSent: number;
+
+  @ApiProperty({
+    example: '2021-01-20T12:00:00.000Z',
   })
   @IsDateString()
   createdAt: Date;

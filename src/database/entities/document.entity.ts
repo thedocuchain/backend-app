@@ -75,6 +75,12 @@ export class Document {
   @Column('timestamptz', { nullable: true })
   initiatorVerifiedAt: Date;
 
+  @Column('timestamptz', { nullable: true })
+  sentAt: Date;
+
+  @Column('integer', { default: 0 })
+  remindersSent: number;
+
   @CreateDateColumn()
   createdAt: Date;
 

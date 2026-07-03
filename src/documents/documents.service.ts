@@ -619,7 +619,10 @@ export class DocumentsService {
       await this.notificationsService.sendEmail(document);
 
       if (document.status === DocumentStatuses.RECIPIENT_ADDED) {
-        await this.update(id, { status: DocumentStatuses.SENT });
+        await this.update(id, {
+          status: DocumentStatuses.SENT,
+          sentAt: document.sentAt ?? new Date(),
+        });
       }
     }
   }

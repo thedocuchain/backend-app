@@ -23,6 +23,7 @@ import { TransformFormatModule } from './transform-format/transform-format.modul
 import { BlacklistModule } from './blacklist/blacklist.module';
 import { VerificationModule } from './verification/verification.module';
 import { WalletMonitorModule } from './wallet-monitor/wallet-monitor.module';
+import { RemindersModule } from './reminders/reminders.module';
 import { LoggerMiddleware } from './common/logger.middleware';
 
 @Module({
@@ -53,6 +54,7 @@ import { LoggerMiddleware } from './common/logger.middleware';
     BlacklistModule,
     VerificationModule,
     WalletMonitorModule,
+    RemindersModule,
   ],
   providers: [],
 })

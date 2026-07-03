@@ -12,6 +12,7 @@ import {
 } from '../common/enums/entities.enum';
 import {
   generateEmailTemplate,
+  generateSignReminderEmail,
   generateVerificationCodeEmail,
 } from '../common/utils/email.util';
 import { MandrillEvent } from './interfaces/webhook.interface';
@@ -118,6 +119,36 @@ export class NotificationsService {
     });
 
     await Promise.all(sendEmailPromises);
+  }
+
+  async sendSignReminder(
+    document: Document,
+    initiator: User,
+    pendingSigners: User[],
+  ): Promise<void> {
+    const token = await this.authService.sign(initiator.id, document.id);
+    const { subject, template } = generateSignReminderEmail(
+      document,
+      token,
+      pendingSigners,
+    );
+
+    await this.mailchimp.messages.send({
+      message: {
+        from_email: this.emailFrom,
+        from_name: this.emailFromName || undefined,
+        to: [{ email: initiator.email, type: 'to' }],
+        subject,
+        html: template,
+        tags: [initiator.id, document.id],
+        metadata: {
+          user_id: initiator.id,
+          document_id: document.id,
+        } as any,
+        track_opens: false,
+        track_clicks: false,
+      },
+    });
   }
 
   async sendVerificationCode(email: string, code: string): Promise<void> {
