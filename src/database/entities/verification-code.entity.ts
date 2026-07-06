@@ -11,7 +11,7 @@ export class VerificationCode {
   id: string;
 
   @Column('text')
-  documentId: string;
+  subjectId: string;
 
   @Column('text')
   email: string;

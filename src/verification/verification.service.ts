@@ -23,7 +23,7 @@ export class VerificationService {
     private readonly verificationCodeRepository: Repository<VerificationCode>,
   ) {}
 
-  async issueCode(documentId: string, email: string): Promise<string> {
+  async issueCode(subjectId: string, email: string): Promise<string> {
     const lowerCasedEmail = email.toLowerCase();
     const now = Date.now();
 
@@ -36,7 +36,7 @@ export class VerificationService {
     }
 
     const lastCode = await this.verificationCodeRepository.findOne({
-      where: { documentId },
+      where: { subjectId },
       order: { createdAt: 'DESC' },
     });
     if (lastCode && now - lastCode.createdAt.getTime() < RESEND_COOLDOWN_MS) {
@@ -44,13 +44,13 @@ export class VerificationService {
     }
 
     await this.verificationCodeRepository.update(
-      { documentId, consumedAt: IsNull() },
+      { subjectId, consumedAt: IsNull() },
       { consumedAt: new Date(now) },
     );
 
     const code = crypto.randomInt(0, 1_000_000).toString().padStart(6, '0');
     const entry = this.verificationCodeRepository.create({
-      documentId,
+      subjectId,
       email: lowerCasedEmail,
       code,
       expiresAt: new Date(now + CODE_TTL_MS),
@@ -60,11 +60,11 @@ export class VerificationService {
     return code;
   }
 
-  async validate(documentId: string, code: string): Promise<boolean> {
+  async validate(subjectId: string, code: string): Promise<boolean> {
     const now = new Date();
     const entry = await this.verificationCodeRepository.findOne({
       where: {
-        documentId,
+        subjectId,
         consumedAt: IsNull(),
         expiresAt: MoreThan(now),
       },

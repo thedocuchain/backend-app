@@ -67,6 +67,9 @@ export class User {
   @Column('timestamptz', { nullable: true })
   lastNotifyDate: Date;
 
+  @Column('timestamptz', { nullable: true })
+  seenAt: Date;
+
   @ManyToOne(() => Document, (document) => document.users)
   document: Document;
 

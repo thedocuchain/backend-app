@@ -20,6 +20,7 @@ import { EventEmitterModule } from '@nestjs/event-emitter';
 import { AuditLogsModule } from './audit-logs/audit-logs.module';
 import { TransformFormatModule } from './transform-format/transform-format.module';
 import { BlacklistModule } from './blacklist/blacklist.module';
+import { AccountsModule } from './accounts/accounts.module';
 import { VerificationModule } from './verification/verification.module';
 import { WalletMonitorModule } from './wallet-monitor/wallet-monitor.module';
 import { RemindersModule } from './reminders/reminders.module';
@@ -50,6 +51,7 @@ import { LoggerMiddleware } from './common/logger.middleware';
     AuditLogsModule,
     TransformFormatModule,
     BlacklistModule,
+    AccountsModule,
     VerificationModule,
     WalletMonitorModule,
     RemindersModule,
