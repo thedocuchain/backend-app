@@ -15,10 +15,19 @@ export class FeedbacksService {
   ) {}
 
   public async create(feedback: CreateFeedbackDto): Promise<void> {
-    const checkSum = feedback?.username + feedback.email + feedback.description;
+    await this.record(feedback.username, feedback.email, feedback.description);
+  }
+
+  public async record(
+    username: string,
+    email: string,
+    description: string,
+  ): Promise<void> {
     const newFeedback = this.feedbackRepository.create({
-      ...feedback,
-      checkSum: hash(checkSum),
+      username,
+      email,
+      description,
+      checkSum: hash(username + email + description),
     });
     try {
       const savedFeedback = await this.feedbackRepository.save(newFeedback);

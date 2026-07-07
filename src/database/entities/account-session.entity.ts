@@ -23,6 +23,9 @@ export class AccountSession {
   @Column('text', { nullable: true })
   ip: string;
 
+  @Column('text', { nullable: true })
+  country: string;
+
   @Column('timestamptz')
   lastActiveAt: Date;
 

@@ -11,12 +11,14 @@ import { Document } from '../database/entities/document.entity';
 import { User } from '../database/entities/user.entity';
 import { AuthService } from '../auth/auth.service';
 import { BlacklistService } from '../blacklist/blacklist.service';
+import { FeedbacksService } from '../feedbacks/feedbacks.service';
 import { DocumentStatuses, UserRoles } from '../common/enums/entities.enum';
 import { hashPassword, verifyPassword } from '../common/utils/password.util';
 import { toPublicAccount, PublicAccount } from './account.mapper';
 import { UpdateAccountDto } from './dto/update-account.dto';
 import { UpdatePasswordDto } from './dto/update-password.dto';
 import { SaveSignatureDto } from './dto/save-signature.dto';
+import { SupportTicketDto } from './dto/support-ticket.dto';
 
 const SENT_STATUSES: string[] = [
   DocumentStatuses.SENT,
@@ -55,6 +57,7 @@ export class AccountsService {
     private readonly userRepository: Repository<User>,
     private readonly authService: AuthService,
     private readonly blacklistService: BlacklistService,
+    private readonly feedbacksService: FeedbacksService,
   ) {}
 
   async updateProfile(
@@ -102,6 +105,17 @@ export class AccountsService {
     }
 
     return toPublicAccount(await this.accountRepository.save(account));
+  }
+
+  async sendSupportTicket(
+    account: Account,
+    supportTicketDto: SupportTicketDto,
+  ): Promise<void> {
+    await this.feedbacksService.record(
+      account.name,
+      account.email,
+      `[Support] ${supportTicketDto.title}\n${supportTicketDto.text}`,
+    );
   }
 
   async listDocuments(account: Account): Promise<AccountDocument[]> {

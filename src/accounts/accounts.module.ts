@@ -11,6 +11,7 @@ import { VerificationModule } from '../verification/verification.module';
 import { NotificationsModule } from '../notifications/notifications.module';
 import { RecaptchaModule } from '../recaptcha/recaptcha.module';
 import { BlacklistModule } from '../blacklist/blacklist.module';
+import { FeedbacksModule } from '../feedbacks/feedbacks.module';
 import { AccountsService } from './accounts.service';
 import { AccountAuthService } from './account-auth.service';
 import { AccountJwtStrategy } from './strategies/account-jwt.strategy';
@@ -26,6 +27,7 @@ import { AccountsController } from './accounts.controller';
     NotificationsModule,
     RecaptchaModule,
     BlacklistModule,
+    FeedbacksModule,
   ],
   controllers: [AuthController, AccountsController],
   providers: [AccountsService, AccountAuthService, AccountJwtStrategy],

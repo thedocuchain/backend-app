@@ -19,6 +19,8 @@ import { toPublicAccount } from './account.mapper';
 import { UpdateAccountDto } from './dto/update-account.dto';
 import { UpdatePasswordDto } from './dto/update-password.dto';
 import { SaveSignatureDto } from './dto/save-signature.dto';
+import { ResetPasswordDto } from './dto/reset-password.dto';
+import { SupportTicketDto } from './dto/support-ticket.dto';
 import { AccountAuthGuard } from '../common/guards/account-auth.guard';
 
 @ApiTags('account')
@@ -57,6 +59,31 @@ export class AccountsController {
     await this.accountAuthService.revokeOtherSessions(
       req.user.account.id,
       req.user.sessionId,
+    );
+  }
+
+  @Post('password-reset/send')
+  @HttpCode(200)
+  sendPasswordResetCode(@Request() req) {
+    return this.accountAuthService.sendPasswordResetCode(req.user.account);
+  }
+
+  @Post('password-reset/confirm')
+  @HttpCode(200)
+  resetPassword(@Request() req, @Body() resetPasswordDto: ResetPasswordDto) {
+    return this.accountAuthService.resetPassword(
+      req.user.account,
+      req.user.sessionId,
+      resetPasswordDto,
+    );
+  }
+
+  @Post('support')
+  @HttpCode(200)
+  sendSupportTicket(@Request() req, @Body() supportTicketDto: SupportTicketDto) {
+    return this.accountsService.sendSupportTicket(
+      req.user.account,
+      supportTicketDto,
     );
   }
 

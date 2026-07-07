@@ -37,6 +37,7 @@ export class AuthController {
     return this.accountAuthService.verifyEmail(verifyEmailDto, {
       userAgent: req.headers['user-agent'],
       ip,
+      country: req.headers['cf-ipcountry'],
     });
   }
 
@@ -56,6 +57,7 @@ export class AuthController {
     return this.accountAuthService.login(loginAccountDto, {
       userAgent: req.headers['user-agent'],
       ip,
+      country: req.headers['cf-ipcountry'],
     });
   }
 

@@ -23,6 +23,7 @@ import { AccountJwtPayload } from './interfaces/account-token.interface';
 import { RegisterAccountDto } from './dto/register-account.dto';
 import { LoginAccountDto } from './dto/login-account.dto';
 import { VerifyEmailDto } from './dto/verify-email.dto';
+import { ResetPasswordDto } from './dto/reset-password.dto';
 
 const TOKEN_TTL = '30d';
 const LAST_ACTIVE_UPDATE_INTERVAL_MS = 10 * 60 * 1000;
@@ -30,6 +31,7 @@ const LAST_ACTIVE_UPDATE_INTERVAL_MS = 10 * 60 * 1000;
 export interface SessionMeta {
   userAgent?: string;
   ip?: string;
+  country?: string;
 }
 
 export interface AuthResult {
@@ -192,6 +194,7 @@ export class AccountAuthService {
       id: session.id,
       userAgent: session.userAgent,
       ip: session.ip,
+      country: session.country,
       createdAt: session.createdAt,
       lastActiveAt: session.lastActiveAt,
       isCurrent: session.id === currentSessionId,
@@ -209,6 +212,32 @@ export class AccountAuthService {
     await this.sessionRepository.update(session.id, {
       revokedAt: new Date(),
     });
+  }
+
+  async sendPasswordResetCode(account: Account): Promise<void> {
+    const code = await this.verificationService.issueCode(
+      `reset:${account.id}`,
+      account.email,
+    );
+    await this.notificationsService.sendVerificationCode(account.email, code);
+  }
+
+  async resetPassword(
+    account: Account,
+    sessionId: string,
+    resetPasswordDto: ResetPasswordDto,
+  ): Promise<void> {
+    const isValid = await this.verificationService.validate(
+      `reset:${account.id}`,
+      resetPasswordDto.code,
+    );
+    if (!isValid) {
+      throw new BadRequestException('Invalid or expired code.');
+    }
+
+    account.passwordHash = await hashPassword(resetPasswordDto.password);
+    await this.accountRepository.save(account);
+    await this.revokeOtherSessions(account.id, sessionId);
   }
 
   async revokeOtherSessions(
@@ -235,6 +264,7 @@ export class AccountAuthService {
         account,
         userAgent: meta.userAgent ?? null,
         ip: meta.ip ?? null,
+        country: meta.country ?? null,
         lastActiveAt: new Date(),
       }),
     );
