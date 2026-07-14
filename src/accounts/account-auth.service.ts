@@ -16,7 +16,6 @@ import { Account } from '../database/entities/account.entity';
 import { AccountSession } from '../database/entities/account-session.entity';
 import { VerificationService } from '../verification/verification.service';
 import { NotificationsService } from '../notifications/notifications.service';
-import { RecaptchaService } from '../recaptcha/recaptcha.service';
 import { hashPassword, verifyPassword } from '../common/utils/password.util';
 import { toPublicAccount, PublicAccount } from './account.mapper';
 import { AccountJwtPayload } from './interfaces/account-token.interface';
@@ -51,15 +50,12 @@ export class AccountAuthService {
     private readonly jwtService: JwtService,
     private readonly verificationService: VerificationService,
     private readonly notificationsService: NotificationsService,
-    private readonly recaptchaService: RecaptchaService,
     configService: ConfigService,
   ) {
     this.secret = configService.get<string>('JWT_SECRET');
   }
 
   async register(registerAccountDto: RegisterAccountDto): Promise<void> {
-    await this.checkRecaptcha(registerAccountDto.recaptchaToken);
-
     const email = registerAccountDto.email.toLowerCase();
     const existing = await this.accountRepository.findOneBy({ email });
     if (existing?.emailVerifiedAt) {
@@ -124,8 +120,6 @@ export class AccountAuthService {
     loginAccountDto: LoginAccountDto,
     meta: SessionMeta,
   ): Promise<AuthResult> {
-    await this.checkRecaptcha(loginAccountDto.recaptchaToken);
-
     const account = await this.accountRepository.findOneBy({
       email: loginAccountDto.email.toLowerCase(),
     });
@@ -283,12 +277,5 @@ export class AccountAuthService {
       account.email,
     );
     await this.notificationsService.sendVerificationCode(account.email, code);
-  }
-
-  private async checkRecaptcha(recaptchaToken: string): Promise<void> {
-    const isHuman = await this.recaptchaService.verify(recaptchaToken);
-    if (!isHuman) {
-      throw new BadRequestException('reCAPTCHA verification failed');
-    }
   }
 }

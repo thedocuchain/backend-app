@@ -14,10 +14,4 @@ export class LoginAccountDto {
   })
   @IsString()
   readonly password: string;
-
-  @ApiProperty({
-    description: 'reCAPTCHA token',
-  })
-  @IsString()
-  readonly recaptchaToken: string;
 }

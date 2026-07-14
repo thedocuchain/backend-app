@@ -9,7 +9,6 @@ import { User } from '../database/entities/user.entity';
 import { AuthModule } from '../auth/auth.module';
 import { VerificationModule } from '../verification/verification.module';
 import { NotificationsModule } from '../notifications/notifications.module';
-import { RecaptchaModule } from '../recaptcha/recaptcha.module';
 import { BlacklistModule } from '../blacklist/blacklist.module';
 import { FeedbacksModule } from '../feedbacks/feedbacks.module';
 import { AccountsService } from './accounts.service';
@@ -25,7 +24,6 @@ import { AccountsController } from './accounts.controller';
     AuthModule,
     VerificationModule,
     NotificationsModule,
-    RecaptchaModule,
     BlacklistModule,
     FeedbacksModule,
   ],

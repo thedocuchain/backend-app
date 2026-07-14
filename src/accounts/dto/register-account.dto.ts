@@ -32,10 +32,4 @@ export class RegisterAccountDto {
   @MinLength(8)
   @MaxLength(128)
   readonly password: string;
-
-  @ApiProperty({
-    description: 'reCAPTCHA token',
-  })
-  @IsString()
-  readonly recaptchaToken: string;
 }
