@@ -19,6 +19,11 @@ async function bootstrap() {
   );
   app.set('trust proxy', true);
 
+  // Stripe webhook signature verification needs the untouched raw body, so it
+  // must be parsed as a Buffer before the global JSON parser runs. body-parser
+  // sets req._body, so the JSON parser below skips this path.
+  app.use('/v1/billing/webhook', bodyParser.raw({ type: '*/*' }));
+
   app.use(bodyParser.json({ limit: '50mb' }));
   app.use(bodyParser.urlencoded({ limit: '50mb', extended: true }));
   app.useGlobalPipes(new ValidationPipe());

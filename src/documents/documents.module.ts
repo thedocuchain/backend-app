@@ -1,8 +1,11 @@
 import { Module } from '@nestjs/common';
 import { DocumentsController } from './documents.controller';
+import { AccountDocumentsController } from './account-documents.controller';
 import { DocumentsService } from './documents.service';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { Document } from '../database/entities/document.entity';
+import { Account } from '../database/entities/account.entity';
+import { BillingModule } from '../billing/billing.module';
 import { FileStorageModule } from '../file-storage/file-storage.module';
 import { UsersModule } from '../users/users.module';
 import { PdfModule } from '../pdf/pdf.module';
@@ -18,7 +21,8 @@ import { VerificationModule } from '../verification/verification.module';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([Document]),
+    TypeOrmModule.forFeature([Document, Account]),
+    BillingModule,
     FileStorageModule,
     UsersModule,
     PdfModule,
@@ -33,7 +37,7 @@ import { VerificationModule } from '../verification/verification.module';
     BlacklistModule,
     VerificationModule,
   ],
-  controllers: [DocumentsController],
+  controllers: [DocumentsController, AccountDocumentsController],
   providers: [DocumentsService],
   exports: [DocumentsService],
 })

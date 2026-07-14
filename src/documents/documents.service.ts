@@ -1,12 +1,13 @@
 import {
   BadRequestException,
+  ForbiddenException,
   Injectable,
   NotAcceptableException,
 } from '@nestjs/common';
 import { InjectDataSource, InjectRepository } from '@nestjs/typeorm';
 import { ConfigService } from '@nestjs/config';
 import { EventEmitter2, OnEvent } from '@nestjs/event-emitter';
-import { DataSource, Repository } from 'typeorm';
+import { DataSource, MoreThanOrEqual, Repository } from 'typeorm';
 import { hash } from 'typeorm/util/StringUtils';
 import { v4 as uuidV4 } from 'uuid';
 import * as crypto from 'crypto';
@@ -26,6 +27,7 @@ import { AddUsersDocumentDto } from './dto/add-users-document.dto';
 import { SignDocumentDto } from './dto/sign-document.dto';
 import { ReadDocumentDto } from './dto/read-document.dto';
 import {
+  AccountPlan,
   AuditLogEventTypes,
   BlockchainTypes,
   DocumentStatuses,
@@ -33,6 +35,9 @@ import {
   NotifyStatuses,
   UserRoles,
 } from '../common/enums/entities.enum';
+import { Account } from '../database/entities/account.entity';
+import { BillingService } from '../billing/billing.service';
+import { PLAN_LIMITS } from '../billing/plans';
 import { IDocumentWithInitials } from '../pdf/interfaces/pdf.interface';
 import { FindDocumentDto } from './dto/find-document.dto';
 import { CreateUserDto } from '../users/dto/create-user.dto';
@@ -55,6 +60,9 @@ export class DocumentsService {
     @InjectDataSource() private readonly dataSource: DataSource,
     @InjectRepository(Document)
     private readonly documentRepository: Repository<Document>,
+    @InjectRepository(Account)
+    private readonly accountRepository: Repository<Account>,
+    private readonly billingService: BillingService,
     private readonly fileStorageService: FileStorageService,
     private readonly usersService: UsersService,
     private readonly configService: ConfigService,
@@ -70,7 +78,42 @@ export class DocumentsService {
     private readonly blacklistService: BlacklistService,
     private readonly verificationService: VerificationService,
   ) {}
-  public async upload(file: Express.Multer.File): Promise<UploadDocumentDto> {
+  public async uploadForAccount(
+    file: Express.Multer.File,
+    account: Account,
+  ): Promise<UploadDocumentDto> {
+    if (this.billingService.enabled) {
+      const limit = PLAN_LIMITS[account.plan ?? AccountPlan.FREE].docsPerMonth;
+      if (Number.isFinite(limit)) {
+        const startOfMonth = new Date();
+        startOfMonth.setUTCDate(1);
+        startOfMonth.setUTCHours(0, 0, 0, 0);
+
+        const used = await this.documentRepository.count({
+          where: {
+            accountId: account.id,
+            createdAt: MoreThanOrEqual(startOfMonth),
+          },
+        });
+
+        if (used >= limit) {
+          throw new ForbiddenException({
+            code: 'PLAN_LIMIT_DOCS',
+            message: `Your plan allows ${limit} document${
+              limit === 1 ? '' : 's'
+            } per month. Upgrade to create more.`,
+          });
+        }
+      }
+    }
+
+    return this.upload(file, account.id);
+  }
+
+  public async upload(
+    file: Express.Multer.File,
+    accountId?: string,
+  ): Promise<UploadDocumentDto> {
     if (!file) {
       throw new BadRequestException('File is required.');
     }
@@ -112,6 +155,7 @@ export class DocumentsService {
       originalHash: `0x${originalDocumentHash}`,
       status: DocumentStatuses.UPLOADED,
       checkSum: hash(`${fileName}${fileType}${filePath}`),
+      accountId: accountId ?? null,
     });
 
     const newDoc = await this.documentRepository.save(document);
@@ -167,6 +211,30 @@ export class DocumentsService {
       throw new BadRequestException(
         'This sender is blocked from sending documents.',
       );
+    }
+
+    if (this.billingService.enabled && document.accountId) {
+      const account = await this.accountRepository.findOne({
+        where: { id: document.accountId },
+      });
+      if (account) {
+        const limit =
+          PLAN_LIMITS[account.plan ?? AccountPlan.FREE].signersPerDoc;
+        if (Number.isFinite(limit)) {
+          const existingSigners = document.users.filter(
+            (user) => user.role === UserRoles.SIGNER,
+          ).length;
+          const newSigners = users.filter(
+            (user) => user.role === UserRoles.SIGNER,
+          ).length;
+          if (existingSigners + newSigners > limit) {
+            throw new ForbiddenException({
+              code: 'PLAN_LIMIT_SIGNERS',
+              message: `Your plan allows up to ${limit} signers per document. Upgrade for more.`,
+            });
+          }
+        }
+      }
     }
 
     if (users.length > 0) {

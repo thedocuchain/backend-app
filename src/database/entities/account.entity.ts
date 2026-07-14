@@ -7,6 +7,7 @@ import {
   OneToMany,
 } from 'typeorm';
 import { AccountSession } from './account-session.entity';
+import { AccountPlan } from '../../common/enums/entities.enum';
 
 @Entity()
 export class Account {
@@ -33,6 +34,24 @@ export class Account {
 
   @Column('timestamptz', { nullable: true })
   emailVerifiedAt: Date;
+
+  @Column('text', { default: AccountPlan.FREE })
+  plan: AccountPlan;
+
+  @Column('text', { nullable: true })
+  stripeCustomerId: string | null;
+
+  @Column('text', { nullable: true })
+  stripeSubscriptionId: string | null;
+
+  @Column('text', { nullable: true })
+  subscriptionStatus: string | null;
+
+  @Column('timestamptz', { nullable: true })
+  currentPeriodEnd: Date | null;
+
+  @Column('boolean', { default: false })
+  cancelAtPeriodEnd: boolean;
 
   @CreateDateColumn()
   createdAt: Date;

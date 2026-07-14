@@ -4,8 +4,15 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { In, IsNull, LessThan, Not, Repository } from 'typeorm';
 
 import { Document } from '../database/entities/document.entity';
-import { DocumentStatuses, UserRoles } from '../common/enums/entities.enum';
+import { Account } from '../database/entities/account.entity';
+import {
+  AccountPlan,
+  DocumentStatuses,
+  UserRoles,
+} from '../common/enums/entities.enum';
 import { NotificationsService } from '../notifications/notifications.service';
+import { BillingService } from '../billing/billing.service';
+import { PLAN_LIMITS } from '../billing/plans';
 
 // Days after sending at which the initiator is reminded about unsigned documents.
 const REMINDER_SCHEDULE_DAYS = [3, 7, 14, 30];
@@ -18,6 +25,9 @@ export class RemindersService {
   constructor(
     @InjectRepository(Document)
     private readonly documentRepository: Repository<Document>,
+    @InjectRepository(Account)
+    private readonly accountRepository: Repository<Account>,
+    private readonly billingService: BillingService,
     private readonly notificationsService: NotificationsService,
   ) {}
 
@@ -37,6 +47,20 @@ export class RemindersService {
     });
 
     for (const document of documents) {
+      // Reminders are a paid perk for account-owned documents. Anonymous and
+      // legacy documents (no accountId) keep the original behaviour.
+      if (this.billingService.enabled && document.accountId) {
+        const account = await this.accountRepository.findOne({
+          where: { id: document.accountId },
+        });
+        if (
+          account &&
+          !PLAN_LIMITS[account.plan ?? AccountPlan.FREE].reminders
+        ) {
+          continue;
+        }
+      }
+
       const daysSinceSent = (Date.now() - document.sentAt.getTime()) / DAY_MS;
       const dueStage = REMINDER_SCHEDULE_DAYS.filter(
         (days) => daysSinceSent >= days,

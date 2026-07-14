@@ -5,6 +5,7 @@ import {
   CreateDateColumn,
   UpdateDateColumn,
   OneToMany,
+  Index,
 } from 'typeorm';
 import { User } from './user.entity';
 import {
@@ -47,6 +48,10 @@ export class Document {
 
   @Column('text')
   fileStorageId: string;
+
+  @Column('uuid', { nullable: true })
+  @Index()
+  accountId?: string | null;
 
   @Column('text', { nullable: true })
   shortId: string;

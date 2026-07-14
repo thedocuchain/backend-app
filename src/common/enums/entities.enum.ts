@@ -15,6 +15,12 @@ export enum UserRoles {
   WATCHER = 'watcher',
 }
 
+export enum AccountPlan {
+  FREE = 'free',
+  PRO = 'pro',
+  PRO_MAX = 'pro_max',
+}
+
 export enum NotifyStatuses {
   NOT_SENT = 'not sent',
   DELIVERED = 'delivered',

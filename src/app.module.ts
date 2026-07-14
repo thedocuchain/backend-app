@@ -24,6 +24,7 @@ import { AccountsModule } from './accounts/accounts.module';
 import { VerificationModule } from './verification/verification.module';
 import { WalletMonitorModule } from './wallet-monitor/wallet-monitor.module';
 import { RemindersModule } from './reminders/reminders.module';
+import { BillingModule } from './billing/billing.module';
 import { LoggerMiddleware } from './common/logger.middleware';
 
 @Module({
@@ -55,6 +56,7 @@ import { LoggerMiddleware } from './common/logger.middleware';
     VerificationModule,
     WalletMonitorModule,
     RemindersModule,
+    BillingModule,
   ],
   providers: [],
 })
