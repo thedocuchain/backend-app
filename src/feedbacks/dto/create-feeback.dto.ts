@@ -22,11 +22,4 @@ export class CreateFeedbackDto {
   @IsString()
   @IsNotEmpty()
   description: string;
-
-  @ApiProperty({
-    example: 'recaptchaToken',
-  })
-  @IsString()
-  @IsNotEmpty()
-  recaptchaToken: string;
 }

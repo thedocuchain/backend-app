@@ -65,4 +65,3 @@ jobs:
         TG_CHAT_ID: ${{ secrets.TG_CHAT_ID }}
         WALLET_ALERT_TG_BOT_TOKEN: ${{ secrets.WALLET_ALERT_TG_BOT_TOKEN }}
         WALLET_ALERT_TG_CHAT_ID: ${{ secrets.WALLET_ALERT_TG_CHAT_ID }}
-        RECAPTCHA_SECRET_KEY: ${{ secrets.RECAPTCHA_SECRET_KEY }}

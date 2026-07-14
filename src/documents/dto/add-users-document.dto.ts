@@ -47,11 +47,4 @@ export class AddUsersDocumentDto {
   @IsOptional()
   @IsEnum(BlockchainTypes)
   readonly blockchain: string = BlockchainTypes.POLYGON;
-
-  @ApiProperty({
-    example: 'recaptchaToken',
-  })
-  @IsString()
-  @IsNotEmpty()
-  recaptchaToken: string;
 }

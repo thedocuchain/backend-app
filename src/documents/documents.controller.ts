@@ -34,8 +34,6 @@ import { AddUsersDocumentDto } from './dto/add-users-document.dto';
 import { SignDocumentDto } from './dto/sign-document.dto';
 import { FindDocumentDto } from './dto/find-document.dto';
 import { SubscribeDocumentDto } from './dto/subscribe-document.dto';
-import { NotifyDocumentDto } from './dto/notify-document.dto';
-import { SendCodeDto } from './dto/send-code.dto';
 import { ConfirmCodeDto } from './dto/confirm-code.dto';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 
@@ -126,12 +124,8 @@ export class DocumentsController {
   sendInitiatorCode(
     @Param('id')
     id: string,
-    @Body() sendCodeDto: SendCodeDto,
   ) {
-    return this.documentsService.sendInitiatorCode(
-      id,
-      sendCodeDto.recaptchaToken,
-    );
+    return this.documentsService.sendInitiatorCode(id);
   }
 
   @Post(':id/verify-initiator/confirm')
@@ -250,9 +244,8 @@ export class DocumentsController {
   notifyUsers(
     @Param('id')
     id: string,
-    @Body() notifyDocumentDto: NotifyDocumentDto,
   ) {
-    return this.documentsService.notify(id, notifyDocumentDto.recaptchaToken);
+    return this.documentsService.notify(id);
   }
 
   @Post(':id/users/:userId/notify')
@@ -262,13 +255,8 @@ export class DocumentsController {
     id: string,
     @Param('userId')
     userId: string,
-    @Body() notifyDocumentDto: NotifyDocumentDto,
   ) {
-    return this.documentsService.notify(
-      id,
-      notifyDocumentDto.recaptchaToken,
-      userId,
-    );
+    return this.documentsService.notify(id, userId);
   }
 
   @ApiBearerAuth()

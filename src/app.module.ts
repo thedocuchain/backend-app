@@ -17,7 +17,6 @@ import { EventsModule } from './events/events.module';
 import { BlockchainModule } from './blockchain/blockchain.module';
 import { FeedbacksModule } from './feedbacks/feedbacks.module';
 import { EventEmitterModule } from '@nestjs/event-emitter';
-import { RecaptchaModule } from './recaptcha/recaptcha.module';
 import { AuditLogsModule } from './audit-logs/audit-logs.module';
 import { TransformFormatModule } from './transform-format/transform-format.module';
 import { BlacklistModule } from './blacklist/blacklist.module';
@@ -48,7 +47,6 @@ import { LoggerMiddleware } from './common/logger.middleware';
     EventsModule,
     BlockchainModule,
     FeedbacksModule,
-    RecaptchaModule,
     AuditLogsModule,
     TransformFormatModule,
     BlacklistModule,

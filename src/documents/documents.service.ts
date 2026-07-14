@@ -46,7 +46,6 @@ import { AuthService } from '../auth/auth.service';
 import { BlockchainService } from '../blockchain/blockchain.service';
 import { AuditLogsService } from '../audit-logs/audit-logs.service';
 import { TransformFormatService } from '../transform-format/transform-format.service';
-import { RecaptchaService } from '../recaptcha/recaptcha.service';
 import { BlacklistService } from '../blacklist/blacklist.service';
 import { VerificationService } from '../verification/verification.service';
 
@@ -68,7 +67,6 @@ export class DocumentsService {
     private readonly auditLogsService: AuditLogsService,
     private readonly eventEmitter: EventEmitter2,
     private readonly transformFormatService: TransformFormatService,
-    private readonly recaptchaService: RecaptchaService,
     private readonly blacklistService: BlacklistService,
     private readonly verificationService: VerificationService,
   ) {}
@@ -136,14 +134,6 @@ export class DocumentsService {
     id: string,
     updateDocumentDto: AddUsersDocumentDto,
   ): Promise<void> {
-    const isHuman = await this.recaptchaService.verify(
-      updateDocumentDto.recaptchaToken,
-    );
-
-    if (!isHuman) {
-      throw new BadRequestException('reCAPTCHA verification failed');
-    }
-
     const documentName = updateDocumentDto.name;
     const users = updateDocumentDto?.users;
     const blockchain = updateDocumentDto.blockchain;
@@ -588,17 +578,7 @@ export class DocumentsService {
     }
   }
 
-  public async notify(
-    id: string,
-    recaptchaToken: string,
-    userId?: string,
-  ): Promise<void> {
-    const isHuman = await this.recaptchaService.verify(recaptchaToken);
-
-    if (!isHuman) {
-      throw new BadRequestException('reCAPTCHA verification failed');
-    }
-
+  public async notify(id: string, userId?: string): Promise<void> {
     const document = await this.findOne(id);
     if (!document) {
       throw new BadRequestException('Document is not found.');
@@ -627,15 +607,7 @@ export class DocumentsService {
     }
   }
 
-  public async sendInitiatorCode(
-    id: string,
-    recaptchaToken: string,
-  ): Promise<void> {
-    const isHuman = await this.recaptchaService.verify(recaptchaToken);
-    if (!isHuman) {
-      throw new BadRequestException('reCAPTCHA verification failed');
-    }
-
+  public async sendInitiatorCode(id: string): Promise<void> {
     const document = await this.findOne(id);
     const initiator = document.users.find((user) => user.isInitiator);
     if (!initiator) {

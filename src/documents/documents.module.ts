@@ -13,7 +13,6 @@ import { EventsModule } from '../events/events.module';
 import { BlockchainModule } from '../blockchain/blockchain.module';
 import { AuditLogsModule } from '../audit-logs/audit-logs.module';
 import { TransformFormatModule } from '../transform-format/transform-format.module';
-import { RecaptchaModule } from '../recaptcha/recaptcha.module';
 import { BlacklistModule } from '../blacklist/blacklist.module';
 import { VerificationModule } from '../verification/verification.module';
 
@@ -31,7 +30,6 @@ import { VerificationModule } from '../verification/verification.module';
     BlockchainModule,
     AuditLogsModule,
     TransformFormatModule,
-    RecaptchaModule,
     BlacklistModule,
     VerificationModule,
   ],
