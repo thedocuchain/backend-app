@@ -13,8 +13,10 @@ import { BlacklistModule } from '../blacklist/blacklist.module';
 import { FeedbacksModule } from '../feedbacks/feedbacks.module';
 import { AccountsService } from './accounts.service';
 import { AccountAuthService } from './account-auth.service';
+import { GoogleAuthService } from './google-auth.service';
 import { AccountJwtStrategy } from './strategies/account-jwt.strategy';
 import { AuthController } from './auth.controller';
+import { GoogleAuthController } from './google-auth.controller';
 import { AccountsController } from './accounts.controller';
 
 @Module({
@@ -27,7 +29,12 @@ import { AccountsController } from './accounts.controller';
     BlacklistModule,
     FeedbacksModule,
   ],
-  controllers: [AuthController, AccountsController],
-  providers: [AccountsService, AccountAuthService, AccountJwtStrategy],
+  controllers: [AuthController, GoogleAuthController, AccountsController],
+  providers: [
+    AccountsService,
+    AccountAuthService,
+    GoogleAuthService,
+    AccountJwtStrategy,
+  ],
 })
 export class AccountsModule {}

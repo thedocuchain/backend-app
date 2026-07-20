@@ -124,7 +124,7 @@ export class AccountAuthService {
       email: loginAccountDto.email.toLowerCase(),
     });
     const isValidPassword =
-      account &&
+      account?.passwordHash &&
       (await verifyPassword(loginAccountDto.password, account.passwordHash));
     if (!isValidPassword) {
       throw new UnauthorizedException('Invalid email or password.');
@@ -138,6 +138,39 @@ export class AccountAuthService {
       }
       throw new HttpException('Email is not verified.', HttpStatus.FORBIDDEN);
     }
+
+    return this.createSession(account, meta);
+  }
+
+  async loginWithGoogle(
+    profile: {
+      googleId: string;
+      email: string;
+      name: string;
+      picture?: string;
+    },
+    meta: SessionMeta,
+  ): Promise<AuthResult> {
+    const email = profile.email.toLowerCase();
+    let account = await this.accountRepository.findOne({
+      where: [{ googleId: profile.googleId }, { email }],
+    });
+
+    if (!account) {
+      account = this.accountRepository.create({
+        email,
+        name: profile.name,
+        googleId: profile.googleId,
+        avatarImage: profile.picture ?? null,
+        emailVerifiedAt: new Date(),
+      });
+    } else {
+      account.googleId = account.googleId ?? profile.googleId;
+      account.emailVerifiedAt = account.emailVerifiedAt ?? new Date();
+      account.avatarImage = account.avatarImage ?? profile.picture ?? null;
+    }
+
+    account = await this.accountRepository.save(account);
 
     return this.createSession(account, meta);
   }

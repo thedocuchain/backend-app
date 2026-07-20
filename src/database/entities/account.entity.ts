@@ -20,8 +20,11 @@ export class Account {
   @Column('text')
   name: string;
 
-  @Column('text')
-  passwordHash: string;
+  @Column('text', { nullable: true })
+  passwordHash: string | null;
+
+  @Column('text', { nullable: true, unique: true })
+  googleId: string | null;
 
   @Column('text', { nullable: true })
   avatarImage: string;
