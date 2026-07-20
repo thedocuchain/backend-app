@@ -659,11 +659,6 @@ export class DocumentsService {
       }
       await this.notificationsService.sendEmail(document, user);
     } else {
-      const initiator = document.users.find((user) => user.isInitiator);
-      if (initiator && !document.initiatorVerifiedAt) {
-        throw new BadRequestException('Initiator is not verified.');
-      }
-
       await this.notificationsService.sendEmail(document);
 
       if (document.status === DocumentStatuses.RECIPIENT_ADDED) {
