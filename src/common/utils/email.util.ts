@@ -484,7 +484,7 @@ export function generateVerificationCodeEmail(code: string): {
                         </tr>
                       </tbody>
                     </table>
-                    <p style="font-size:14px;line-height:20px;margin:0;color:#626C7F;letter-spacing:0.28px">This code expires in 15 minutes. If you didn't request it, you can safely ignore this email.</p>
+                    <p style="font-size:14px;line-height:20px;margin:0;color:#626C7F;letter-spacing:0.28px">This code expires in 2 minutes. If you didn't request it, you can safely ignore this email.</p>
                   </td>
                 </tr>
               </tbody>
