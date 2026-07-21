@@ -84,9 +84,11 @@ export class VerificationService {
       return false;
     }
 
-    entry.consumedAt = now;
-    await this.verificationCodeRepository.save(entry);
-
+    // Do NOT consume on success: the response can be lost (mobile networks) or
+    // the user may double-submit. Keeping the code valid until it expires makes
+    // verification idempotent so a retry with the same code still succeeds
+    // instead of failing with "Invalid or expired code". It is superseded when a
+    // new code is issued (issueCode consumes prior ones) or by its TTL/attempts.
     return true;
   }
 }
