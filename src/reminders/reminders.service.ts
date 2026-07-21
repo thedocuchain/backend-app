@@ -11,6 +11,7 @@ import {
   UserRoles,
 } from '../common/enums/entities.enum';
 import { NotificationsService } from '../notifications/notifications.service';
+import { UnsubscribeService } from '../notifications/unsubscribe.service';
 import { BillingService } from '../billing/billing.service';
 import { PLAN_LIMITS } from '../billing/plans';
 
@@ -29,6 +30,7 @@ export class RemindersService {
     private readonly accountRepository: Repository<Account>,
     private readonly billingService: BillingService,
     private readonly notificationsService: NotificationsService,
+    private readonly unsubscribeService: UnsubscribeService,
   ) {}
 
   @Cron(CronExpression.EVERY_HOUR)
@@ -68,13 +70,6 @@ export class RemindersService {
 
       if (dueStage <= document.remindersSent) continue;
 
-      // Mark the stage first so a failing document is retried at the next
-      // stage instead of on every run.
-      await this.documentRepository.update(
-        { id: document.id },
-        { remindersSent: dueStage },
-      );
-
       const initiator = document.users.find((user) => user.isInitiator);
       const pendingSigners = document.users.filter(
         (user) =>
@@ -83,6 +78,16 @@ export class RemindersService {
       );
 
       if (!initiator || pendingSigners.length === 0) continue;
+      if (await this.unsubscribeService.isUnsubscribed(initiator.email)) {
+        continue;
+      }
+
+      // Mark the stage first so a failing document is retried at the next
+      // stage instead of on every run.
+      await this.documentRepository.update(
+        { id: document.id },
+        { remindersSent: dueStage },
+      );
 
       try {
         await this.notificationsService.sendSignReminder(

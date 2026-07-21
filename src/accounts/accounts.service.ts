@@ -12,6 +12,7 @@ import { User } from '../database/entities/user.entity';
 import { AuthService } from '../auth/auth.service';
 import { BlacklistService } from '../blacklist/blacklist.service';
 import { FeedbacksService } from '../feedbacks/feedbacks.service';
+import { UnsubscribeService } from '../notifications/unsubscribe.service';
 import { DocumentStatuses, UserRoles } from '../common/enums/entities.enum';
 import { hashPassword, verifyPassword } from '../common/utils/password.util';
 import { toPublicAccount, PublicAccount } from './account.mapper';
@@ -58,7 +59,24 @@ export class AccountsService {
     private readonly authService: AuthService,
     private readonly blacklistService: BlacklistService,
     private readonly feedbacksService: FeedbacksService,
+    private readonly unsubscribeService: UnsubscribeService,
   ) {}
+
+  async getReminderSubscription(
+    account: Account,
+  ): Promise<{ unsubscribed: boolean }> {
+    return {
+      unsubscribed: await this.unsubscribeService.isUnsubscribed(account.email),
+    };
+  }
+
+  async unsubscribeReminders(account: Account): Promise<void> {
+    await this.unsubscribeService.unsubscribe(account.email);
+  }
+
+  async resubscribeReminders(account: Account): Promise<void> {
+    await this.unsubscribeService.resubscribe(account.email);
+  }
 
   async updateProfile(
     account: Account,

@@ -87,6 +87,23 @@ export class AccountsController {
     );
   }
 
+  @Get('reminders/subscription')
+  getReminderSubscription(@Request() req) {
+    return this.accountsService.getReminderSubscription(req.user.account);
+  }
+
+  @Post('reminders/unsubscribe')
+  @HttpCode(200)
+  unsubscribeReminders(@Request() req) {
+    return this.accountsService.unsubscribeReminders(req.user.account);
+  }
+
+  @Post('reminders/resubscribe')
+  @HttpCode(200)
+  resubscribeReminders(@Request() req) {
+    return this.accountsService.resubscribeReminders(req.user.account);
+  }
+
   @Put('signature')
   saveSignature(@Request() req, @Body() saveSignatureDto: SaveSignatureDto) {
     return this.accountsService.saveSignature(

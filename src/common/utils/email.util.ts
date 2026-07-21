@@ -320,6 +320,7 @@ export function generateSignReminderEmail(
   const clientUrl = 'https://docuchain.io';
   const appUrl = 'https://docuchain.io/app';
   const logoUrl = 'https://docuchain.io/app/assets/logo.png';
+  const unsubscribeUrl = 'https://docuchain.io/unsubscribe';
   const expiredAtTwoDays = Date.now() + 2 * 24 * 3600 * 1000;
   const link = `${appUrl}/doc/status/${document.id}?token=${token}&expiredAt=${expiredAtTwoDays}`;
   const safeLink = escapeHtmlAttribute(link);
@@ -414,7 +415,8 @@ export function generateSignReminderEmail(
       <tbody style="width:100%">
         <tr style="width:100%">
           <td align="center" data-id="__react-email-column">
-            <p style="font-size:14px;line-height:24px;margin:0 0 32px 0;color:#626C7F"><a href=${clientUrl} style="color:#626C7F;text-decoration:underline" target="_blank">DocuChain.io</a></p>
+            <p style="font-size:14px;line-height:24px;margin:0 0 6px 0;color:#626C7F"><a href=${clientUrl} style="color:#626C7F;text-decoration:underline" target="_blank">DocuChain.io</a></p>
+            <p style="font-size:12px;line-height:18px;margin:0 0 32px 0;color:#98A2B3">You're getting these reminders because you sent this document for signing. <a href="${unsubscribeUrl}" style="color:#98A2B3;text-decoration:underline" target="_blank">Unsubscribe from reminders</a></p>
           </td>
         </tr>
       </tbody>

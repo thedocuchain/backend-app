@@ -18,6 +18,7 @@ import {
 import { MandrillEvent } from './interfaces/webhook.interface';
 import { UsersService } from '../users/users.service';
 import { AuthService } from '../auth/auth.service';
+import { UnsubscribeService } from './unsubscribe.service';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { ReadDocumentDto } from '../documents/dto/read-document.dto';
@@ -50,6 +51,7 @@ export class NotificationsService {
     configService: ConfigService,
     private readonly usersService: UsersService,
     private readonly authService: AuthService,
+    private readonly unsubscribeService: UnsubscribeService,
   ) {
     const cfg = getMandrillConfig(configService);
     this.mailchimp = mailchimpTransactional(cfg.apiKey);
@@ -126,6 +128,8 @@ export class NotificationsService {
     initiator: User,
     pendingSigners: User[],
   ): Promise<void> {
+    if (await this.unsubscribeService.isUnsubscribed(initiator.email)) return;
+
     const token = await this.authService.sign(initiator.id, document.id);
     const { subject, template } = generateSignReminderEmail(
       document,
