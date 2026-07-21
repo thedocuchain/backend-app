@@ -473,8 +473,8 @@ export function generateVerificationCodeEmail(code: string): {
                       </tbody>
                     </table>
                     <hr style="width:100%;border:none;border-top:1px solid #eaeaea;margin:0 0 20px 0" />
-                    <p style="font-size:20px;line-height:27px;margin:0 0 8px 0;font-weight:600;color:#000">Verify the initiator</p>
-                    <p style="font-size:14px;line-height:24px;margin:0 0 20px 0;color:#626C7F">Use the code below to confirm the initiator's email and continue sending your document.</p>
+                    <p style="font-size:20px;line-height:27px;margin:0 0 8px 0;font-weight:600;color:#000">Verify your email</p>
+                    <p style="font-size:14px;line-height:24px;margin:0 0 20px 0;color:#626C7F">Use the code below to confirm your email address.</p>
                     <table align="center" width="100%" border="0" cellPadding="0" cellSpacing="0" role="presentation" style="margin:0 0 16px 0">
                       <tbody style="width:100%">
                         <tr style="width:100%">
@@ -484,7 +484,7 @@ export function generateVerificationCodeEmail(code: string): {
                         </tr>
                       </tbody>
                     </table>
-                    <p style="font-size:14px;line-height:20px;margin:0;color:#626C7F;letter-spacing:0.28px">This code expires in 2 minutes. If you didn't request it, you can safely ignore this email.</p>
+                    <p style="font-size:14px;line-height:20px;margin:0;color:#626C7F;letter-spacing:0.28px">This code expires in 15 minutes. If you didn't request it, you can safely ignore this email.</p>
                   </td>
                 </tr>
               </tbody>

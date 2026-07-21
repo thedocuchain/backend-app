@@ -10,7 +10,7 @@ import * as crypto from 'crypto';
 
 import { VerificationCode } from '../database/entities/verification-code.entity';
 
-const CODE_TTL_MS = 2 * 60 * 1000;
+const CODE_TTL_MS = 15 * 60 * 1000;
 const RESEND_COOLDOWN_MS = 60 * 1000;
 const RATE_LIMIT_WINDOW_MS = 90 * 60 * 1000;
 const MAX_CODES_PER_WINDOW = 4;
