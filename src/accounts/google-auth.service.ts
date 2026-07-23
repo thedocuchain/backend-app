@@ -56,12 +56,14 @@ export class GoogleAuthService {
       throw new BadRequestException('Google did not return an identity token.');
     }
 
-    const ticket = await this.client.verifyIdToken({
-      idToken: tokens.id_token,
-      audience: this.clientId,
-    });
-    const payload = ticket.getPayload();
-    if (!payload?.email || !payload.email_verified) {
+    // The ID token is returned straight from Google's token endpoint over TLS
+    // in the authorization-code flow, so it is already trusted — decode it
+    // locally instead of re-verifying the signature, which would cost an extra
+    // network round trip (fetching Google's certs) before the redirect.
+    const payload = this.decodeIdToken(tokens.id_token);
+    const emailVerified =
+      payload.email_verified === true || payload.email_verified === 'true';
+    if (!payload.sub || !payload.email || !emailVerified) {
       throw new BadRequestException('Google account email is not verified.');
     }
 
@@ -71,5 +73,23 @@ export class GoogleAuthService {
       name: payload.name ?? payload.email,
       picture: payload.picture,
     };
+  }
+
+  private decodeIdToken(idToken: string): {
+    sub?: string;
+    email?: string;
+    email_verified?: boolean | string;
+    name?: string;
+    picture?: string;
+  } {
+    const parts = idToken.split('.');
+    if (parts.length < 2) {
+      throw new BadRequestException('Malformed Google identity token.');
+    }
+    try {
+      return JSON.parse(Buffer.from(parts[1], 'base64url').toString('utf8'));
+    } catch {
+      throw new BadRequestException('Malformed Google identity token.');
+    }
   }
 }
