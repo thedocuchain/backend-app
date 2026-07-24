@@ -5,6 +5,8 @@ export interface StripeConfig {
   webhookSecret: string;
   pricePro: string;
   priceProMax: string;
+  priceProYearly: string;
+  priceProMaxYearly: string;
   portalReturnUrl: string;
   checkoutSuccessUrl: string;
   checkoutCancelUrl: string;
@@ -20,6 +22,9 @@ export const getStripeConfig = (configService: ConfigService): StripeConfig => {
     webhookSecret: configService.get<string>('STRIPE_WEBHOOK_SECRET') || '',
     pricePro: configService.get<string>('STRIPE_PRICE_PRO') || '',
     priceProMax: configService.get<string>('STRIPE_PRICE_PRO_MAX') || '',
+    priceProYearly: configService.get<string>('STRIPE_PRICE_PRO_YEARLY') || '',
+    priceProMaxYearly:
+      configService.get<string>('STRIPE_PRICE_PRO_MAX_YEARLY') || '',
     portalReturnUrl:
       configService.get<string>('STRIPE_PORTAL_RETURN_URL') ||
       `${appUrl}/account/billing`,

@@ -21,6 +21,11 @@ export enum AccountPlan {
   PRO_MAX = 'pro_max',
 }
 
+export enum BillingInterval {
+  MONTH = 'month',
+  YEAR = 'year',
+}
+
 export enum NotifyStatuses {
   NOT_SENT = 'not sent',
   DELIVERED = 'delivered',

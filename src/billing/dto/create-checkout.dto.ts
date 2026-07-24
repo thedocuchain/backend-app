@@ -1,8 +1,12 @@
-import { IsEnum } from 'class-validator';
+import { IsEnum, IsOptional } from 'class-validator';
 
-import { AccountPlan } from '../../common/enums/entities.enum';
+import { AccountPlan, BillingInterval } from '../../common/enums/entities.enum';
 
 export class CreateCheckoutDto {
   @IsEnum(AccountPlan)
   plan: AccountPlan;
+
+  @IsOptional()
+  @IsEnum(BillingInterval)
+  interval?: BillingInterval;
 }

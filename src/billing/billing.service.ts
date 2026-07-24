@@ -11,13 +11,18 @@ import { Repository } from 'typeorm';
 import Stripe from 'stripe';
 
 import { Account } from '../database/entities/account.entity';
-import { AccountPlan } from '../common/enums/entities.enum';
+import { AccountPlan, BillingInterval } from '../common/enums/entities.enum';
 import {
   getStripeConfig,
   isBillingEnabled,
   StripeConfig,
 } from '../configs/stripe.config';
-import { planForPriceId, priceIdForPlan, PAID_PLANS } from './plans';
+import {
+  planForPriceId,
+  priceIdForPlan,
+  intervalForPriceId,
+  PAID_PLANS,
+} from './plans';
 
 // Stripe statuses that grant plan access. past_due keeps access during the
 // dunning grace period; everything else falls back to the free plan.
@@ -26,6 +31,7 @@ const GRANTING_STATUSES = ['active', 'trialing', 'past_due'];
 export interface BillingStatus {
   billingEnabled: boolean;
   plan: AccountPlan;
+  interval: BillingInterval;
   subscriptionStatus: string | null;
   currentPeriodEnd: Date | null;
   cancelAtPeriodEnd: boolean;
@@ -63,6 +69,7 @@ export class BillingService {
     return {
       billingEnabled: this.enabled,
       plan: account.plan ?? AccountPlan.FREE,
+      interval: account.billingInterval ?? BillingInterval.MONTH,
       subscriptionStatus: account.subscriptionStatus ?? null,
       currentPeriodEnd: account.currentPeriodEnd ?? null,
       cancelAtPeriodEnd: account.cancelAtPeriodEnd ?? false,
@@ -95,6 +102,7 @@ export class BillingService {
   async createCheckoutSession(
     account: Account,
     plan: AccountPlan,
+    interval: BillingInterval = BillingInterval.MONTH,
   ): Promise<string> {
     if (!PAID_PLANS.includes(plan)) {
       throw new BadRequestException('Not a purchasable plan');
@@ -108,7 +116,7 @@ export class BillingService {
       );
     }
 
-    const priceId = priceIdForPlan(plan, this.config);
+    const priceId = priceIdForPlan(plan, interval, this.config);
     if (!priceId) {
       throw new ServiceUnavailableException('Plan price is not configured');
     }
@@ -247,6 +255,14 @@ export class BillingService {
     return timestamp ? new Date(timestamp * 1000) : null;
   }
 
+  private subscriptionPeriodStart(sub: Stripe.Subscription): Date | null {
+    const item = sub.items?.data?.[0] as { current_period_start?: number };
+    const timestamp =
+      item?.current_period_start ??
+      (sub as unknown as { current_period_start?: number }).current_period_start;
+    return timestamp ? new Date(timestamp * 1000) : null;
+  }
+
   private async syncSubscription(
     subscription: Stripe.Subscription,
   ): Promise<void> {
@@ -260,27 +276,30 @@ export class BillingService {
       return;
     }
 
-    const plan = planForPriceId(
-      this.subscriptionPriceId(subscription) ?? '',
-      this.config,
-    );
+    const priceId = this.subscriptionPriceId(subscription) ?? '';
+    const plan = planForPriceId(priceId, this.config);
+    const interval = intervalForPriceId(priceId, this.config);
     const granting =
       GRANTING_STATUSES.includes(subscription.status) && plan !== null;
 
     if (granting) {
       await this.accountRepository.update(account.id, {
         plan,
+        billingInterval: interval ?? BillingInterval.MONTH,
         stripeSubscriptionId: subscription.id,
         subscriptionStatus: subscription.status,
         cancelAtPeriodEnd: subscription.cancel_at_period_end ?? false,
+        currentPeriodStart: this.subscriptionPeriodStart(subscription),
         currentPeriodEnd: this.subscriptionPeriodEnd(subscription),
       });
     } else {
       await this.accountRepository.update(account.id, {
         plan: AccountPlan.FREE,
+        billingInterval: null,
         stripeSubscriptionId: null,
         subscriptionStatus: subscription.status,
         cancelAtPeriodEnd: false,
+        currentPeriodStart: null,
         currentPeriodEnd: null,
       });
     }

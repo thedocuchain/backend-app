@@ -37,7 +37,7 @@ import {
 } from '../common/enums/entities.enum';
 import { Account } from '../database/entities/account.entity';
 import { BillingService } from '../billing/billing.service';
-import { PLAN_LIMITS } from '../billing/plans';
+import { PLAN_LIMITS, docQuotaFor } from '../billing/plans';
 import { IDocumentWithInitials } from '../pdf/interfaces/pdf.interface';
 import { FindDocumentDto } from './dto/find-document.dto';
 import { CreateUserDto } from '../users/dto/create-user.dto';
@@ -83,25 +83,34 @@ export class DocumentsService {
     account: Account,
   ): Promise<UploadDocumentDto> {
     if (this.billingService.enabled) {
-      const limit = PLAN_LIMITS[account.plan ?? AccountPlan.FREE].docsPerMonth;
+      const plan = account.plan ?? AccountPlan.FREE;
+      const { limit, window } = docQuotaFor(plan, account.billingInterval);
+
       if (Number.isFinite(limit)) {
-        const startOfMonth = new Date();
-        startOfMonth.setUTCDate(1);
-        startOfMonth.setUTCHours(0, 0, 0, 0);
+        let since: Date;
+        if (window === 'period') {
+          // Yearly plans budget documents across the subscription period.
+          since = account.currentPeriodStart ?? new Date(0);
+        } else {
+          since = new Date();
+          since.setUTCDate(1);
+          since.setUTCHours(0, 0, 0, 0);
+        }
 
         const used = await this.documentRepository.count({
           where: {
             accountId: account.id,
-            createdAt: MoreThanOrEqual(startOfMonth),
+            createdAt: MoreThanOrEqual(since),
           },
         });
 
         if (used >= limit) {
+          const per = window === 'period' ? 'year' : 'month';
           throw new ForbiddenException({
             code: 'PLAN_LIMIT_DOCS',
             message: `Your plan allows ${limit} document${
               limit === 1 ? '' : 's'
-            } per month. Upgrade to create more.`,
+            } per ${per}. Upgrade to create more.`,
           });
         }
       }

@@ -7,7 +7,7 @@ import {
   OneToMany,
 } from 'typeorm';
 import { AccountSession } from './account-session.entity';
-import { AccountPlan } from '../../common/enums/entities.enum';
+import { AccountPlan, BillingInterval } from '../../common/enums/entities.enum';
 
 @Entity()
 export class Account {
@@ -52,6 +52,12 @@ export class Account {
 
   @Column('timestamptz', { nullable: true })
   currentPeriodEnd: Date | null;
+
+  @Column('timestamptz', { nullable: true })
+  currentPeriodStart: Date | null;
+
+  @Column('text', { nullable: true })
+  billingInterval: BillingInterval | null;
 
   @Column('boolean', { default: false })
   cancelAtPeriodEnd: boolean;

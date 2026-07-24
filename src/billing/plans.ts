@@ -1,40 +1,73 @@
-import { AccountPlan } from '../common/enums/entities.enum';
+import { AccountPlan, BillingInterval } from '../common/enums/entities.enum';
 import { StripeConfig } from '../configs/stripe.config';
 
 export interface PlanLimits {
-  // Number.POSITIVE_INFINITY means unlimited.
-  docsPerMonth: number;
   signersPerDoc: number;
   reminders: boolean;
 }
 
 export const PLAN_LIMITS: Record<AccountPlan, PlanLimits> = {
   [AccountPlan.FREE]: {
-    docsPerMonth: 1,
     signersPerDoc: 2,
     reminders: false,
   },
   [AccountPlan.PRO]: {
-    docsPerMonth: 20,
     signersPerDoc: 4,
     reminders: true,
   },
   [AccountPlan.PRO_MAX]: {
-    docsPerMonth: Number.POSITIVE_INFINITY,
     signersPerDoc: Number.POSITIVE_INFINITY,
     reminders: true,
   },
 };
+
+export interface DocQuota {
+  // Number.POSITIVE_INFINITY means unlimited.
+  limit: number;
+  // 'month' counts within the calendar month, 'period' within the current
+  // subscription period (used for yearly plans that grant a full-year budget).
+  window: 'month' | 'period';
+}
+
+// Yearly Pro grants a full-year document budget with no monthly sub-cap; every
+// other paid tier is either monthly-metered or unlimited.
+export function docQuotaFor(
+  plan: AccountPlan,
+  interval: BillingInterval | null,
+): DocQuota {
+  if (plan === AccountPlan.PRO_MAX) {
+    return { limit: Number.POSITIVE_INFINITY, window: 'month' };
+  }
+  if (plan === AccountPlan.PRO) {
+    return interval === BillingInterval.YEAR
+      ? { limit: 240, window: 'period' }
+      : { limit: 20, window: 'month' };
+  }
+  return { limit: 1, window: 'month' };
+}
 
 // Only free is a non-paid plan; the rest map to a Stripe price.
 export const PAID_PLANS: AccountPlan[] = [AccountPlan.PRO, AccountPlan.PRO_MAX];
 
 export function priceIdForPlan(
   plan: AccountPlan,
+  interval: BillingInterval,
   config: StripeConfig,
 ): string | null {
-  if (plan === AccountPlan.PRO) return config.pricePro || null;
-  if (plan === AccountPlan.PRO_MAX) return config.priceProMax || null;
+  if (plan === AccountPlan.PRO) {
+    return (
+      (interval === BillingInterval.YEAR
+        ? config.priceProYearly
+        : config.pricePro) || null
+    );
+  }
+  if (plan === AccountPlan.PRO_MAX) {
+    return (
+      (interval === BillingInterval.YEAR
+        ? config.priceProMaxYearly
+        : config.priceProMax) || null
+    );
+  }
   return null;
 }
 
@@ -42,7 +75,29 @@ export function planForPriceId(
   priceId: string,
   config: StripeConfig,
 ): AccountPlan | null {
-  if (priceId && priceId === config.pricePro) return AccountPlan.PRO;
-  if (priceId && priceId === config.priceProMax) return AccountPlan.PRO_MAX;
+  if (!priceId) return null;
+  if (priceId === config.pricePro || priceId === config.priceProYearly) {
+    return AccountPlan.PRO;
+  }
+  if (priceId === config.priceProMax || priceId === config.priceProMaxYearly) {
+    return AccountPlan.PRO_MAX;
+  }
+  return null;
+}
+
+export function intervalForPriceId(
+  priceId: string,
+  config: StripeConfig,
+): BillingInterval | null {
+  if (!priceId) return null;
+  if (
+    priceId === config.priceProYearly ||
+    priceId === config.priceProMaxYearly
+  ) {
+    return BillingInterval.YEAR;
+  }
+  if (priceId === config.pricePro || priceId === config.priceProMax) {
+    return BillingInterval.MONTH;
+  }
   return null;
 }

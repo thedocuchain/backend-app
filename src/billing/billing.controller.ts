@@ -31,6 +31,7 @@ export class BillingController {
     const url = await this.billingService.createCheckoutSession(
       req.user.account,
       dto.plan,
+      dto.interval,
     );
     return { url };
   }
