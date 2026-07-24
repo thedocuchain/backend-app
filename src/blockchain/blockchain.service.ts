@@ -91,7 +91,10 @@ export class BlockchainService implements OnModuleInit {
   ): void {
     const web3 = new Web3(new Web3.providers.HttpProvider(config.rpcUrls[0]));
 
-    const account = web3.eth.accounts.privateKeyToAccount(config.privateKey);
+    const privateKey = config.privateKey.startsWith('0x')
+      ? config.privateKey
+      : `0x${config.privateKey}`;
+    const account = web3.eth.accounts.privateKeyToAccount(privateKey);
     web3.eth.accounts.wallet.add(account);
 
     const instance: EvmBlockchainInstance = {
@@ -114,18 +117,9 @@ export class BlockchainService implements OnModuleInit {
 
     let keypair: Keypair;
     try {
-      const bs58 = await import('bs58');
-      const secretKey = bs58.default.decode(config.privateKey);
-      keypair = Keypair.fromSecretKey(secretKey);
+      keypair = await this.parseSolanaKeypair(config.privateKey);
     } catch (error) {
-      try {
-        const secretKey = Uint8Array.from(
-          config.privateKey.split(',').map((k) => parseInt(k.trim())),
-        );
-        keypair = Keypair.fromSecretKey(secretKey);
-      } catch (fallbackError) {
-        throw new Error(`Invalid Solana private key format: ${error.message}`);
-      }
+      throw new Error(`Invalid Solana private key format: ${error.message}`);
     }
 
     const instance: SolanaBlockchainInstance = {
@@ -137,6 +131,28 @@ export class BlockchainService implements OnModuleInit {
 
     this.blockchainInstances.set(blockchain, instance);
     this.logger.log(`Initialized ${blockchain} blockchain`);
+  }
+
+  private async parseSolanaKeypair(key: string): Promise<Keypair> {
+    let bytes: Uint8Array;
+    if (key.includes(',')) {
+      bytes = Uint8Array.from(key.split(',').map((s) => parseInt(s.trim(), 10)));
+    } else {
+      const hex = key.replace(/^0x/, '');
+      if (/^[0-9a-fA-F]+$/.test(hex) && hex.length % 2 === 0) {
+        bytes = Uint8Array.from(Buffer.from(hex, 'hex'));
+      } else {
+        const bs58 = (await import('bs58')).default;
+        try {
+          bytes = bs58.decode(key);
+        } catch {
+          bytes = Uint8Array.from(Buffer.from(key, 'base64'));
+        }
+      }
+    }
+    return bytes.length === 64
+      ? Keypair.fromSecretKey(bytes)
+      : Keypair.fromSeed(bytes);
   }
 
   private getBlockchainInstance(blockchain: string): BlockchainInstance {
