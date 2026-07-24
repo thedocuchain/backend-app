@@ -4,7 +4,7 @@ import {
   Injectable,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { In, Repository } from 'typeorm';
 
 import { Account } from '../database/entities/account.entity';
 import { Document } from '../database/entities/document.entity';
@@ -14,6 +14,12 @@ import { BlacklistService } from '../blacklist/blacklist.service';
 import { FeedbacksService } from '../feedbacks/feedbacks.service';
 import { UnsubscribeService } from '../notifications/unsubscribe.service';
 import { DocumentStatuses, UserRoles } from '../common/enums/entities.enum';
+import { BillingService } from '../billing/billing.service';
+import {
+  docQuotaFor,
+  periodWindowStart,
+  lockedDocIds,
+} from '../billing/plans';
 import { hashPassword, verifyPassword } from '../common/utils/password.util';
 import { toPublicAccount, PublicAccount } from './account.mapper';
 import { UpdateAccountDto } from './dto/update-account.dto';
@@ -45,6 +51,7 @@ export interface AccountDocument {
   signedByMe: boolean;
   needsMySign: boolean;
   isNew: boolean;
+  locked: boolean;
 }
 
 @Injectable()
@@ -60,6 +67,7 @@ export class AccountsService {
     private readonly blacklistService: BlacklistService,
     private readonly feedbacksService: FeedbacksService,
     private readonly unsubscribeService: UnsubscribeService,
+    private readonly billingService: BillingService,
   ) {}
 
   async getReminderSubscription(
@@ -150,42 +158,66 @@ export class AccountsService {
         'users.role',
         'users.isInitiator',
         'users.seenAt',
+        'users.reportedAt',
       ])
       .addSelect(['signatures.id', 'signatures.signed'])
       .orderBy('document.createdAt', 'DESC')
       .getMany();
 
-    return documents
-      .map((document) => {
-        const mine = document.users.filter(
-          (user) => user.email.toLowerCase() === email,
-        );
-        const isInitiator = mine.some((user) => user.isInitiator);
-        const signedByMe = mine.some((user) =>
-          user.signatures?.some((signature) => signature.signed),
-        );
-        const needsMySign =
-          !signedByMe &&
-          mine.some((user) => user.role === UserRoles.SIGNER) &&
-          AWAITING_SIGN_STATUSES.includes(document.status);
-        const isNew =
-          !isInitiator && !signedByMe && mine.every((user) => !user.seenAt);
-
-        return {
-          id: document.id,
-          name: document.name,
-          status: document.status,
-          createdAt: document.createdAt,
-          isInitiator,
-          signedByMe,
-          needsMySign,
-          isNew,
-        };
-      })
-      .filter(
-        (document) =>
-          document.isInitiator || SENT_STATUSES.includes(document.status),
+    // A document the account reported no longer counts against its quota, and
+    // drops out of its list.
+    const visible = documents.filter((document) => {
+      const mine = document.users.filter(
+        (user) => user.email.toLowerCase() === email,
       );
+      const reportedByMe = mine.some((user) => user.reportedAt);
+      const isInitiator = mine.some((user) => user.isInitiator);
+      const kept = isInitiator || SENT_STATUSES.includes(document.status);
+      return kept && !reportedByMe;
+    });
+
+    // Documents beyond the plan's per-period allowance are locked: still listed,
+    // but not openable until the account frees a slot or upgrades.
+    const quota = docQuotaFor(account.plan, account.billingInterval);
+    let locked = new Set<string>();
+    if (this.billingService.enabled) {
+      const windowStart = periodWindowStart(quota, account.currentPeriodStart);
+      const inWindow = visible
+        .filter((document) => document.createdAt >= windowStart)
+        .map((document) => ({
+          id: document.id,
+          createdAt: document.createdAt,
+        }));
+      locked = lockedDocIds(inWindow, quota.limit);
+    }
+
+    return visible.map((document) => {
+      const mine = document.users.filter(
+        (user) => user.email.toLowerCase() === email,
+      );
+      const isInitiator = mine.some((user) => user.isInitiator);
+      const signedByMe = mine.some((user) =>
+        user.signatures?.some((signature) => signature.signed),
+      );
+      const needsMySign =
+        !signedByMe &&
+        mine.some((user) => user.role === UserRoles.SIGNER) &&
+        AWAITING_SIGN_STATUSES.includes(document.status);
+      const isNew =
+        !isInitiator && !signedByMe && mine.every((user) => !user.seenAt);
+
+      return {
+        id: document.id,
+        name: document.name,
+        status: document.status,
+        createdAt: document.createdAt,
+        isInitiator,
+        signedByMe,
+        needsMySign,
+        isNew,
+        locked: locked.has(document.id),
+      };
+    });
   }
 
   async markDocumentSeen(account: Account, documentId: string): Promise<void> {
@@ -219,6 +251,14 @@ export class AccountsService {
     );
     if (!signer) {
       throw new ForbiddenException('You are not a signer of this document.');
+    }
+
+    const listed = await this.listDocuments(account);
+    if (listed.find((item) => item.id === document.id)?.locked) {
+      throw new ForbiddenException({
+        code: 'PLAN_LIMIT_LOCKED',
+        message: 'Please upgrade your plan to open this document.',
+      });
     }
 
     const token = await this.authService.sign(signer.id, document.id);
@@ -258,5 +298,11 @@ export class AccountsService {
       reportedByUserId: mine[0].id,
       documentId: document.id,
     });
+
+    // Drop the reported document from this account's list and quota count.
+    await this.userRepository.update(
+      { id: In(mine.map((user) => user.id)) },
+      { reportedAt: new Date() },
+    );
   }
 }

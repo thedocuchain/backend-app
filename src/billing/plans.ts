@@ -46,6 +46,37 @@ export function docQuotaFor(
   return { limit: 1, window: 'month' };
 }
 
+// Start of the window the quota is counted over.
+export function periodWindowStart(
+  quota: DocQuota,
+  currentPeriodStart: Date | null,
+): Date {
+  if (quota.window === 'period') {
+    return currentPeriodStart ?? new Date(0);
+  }
+  const start = new Date();
+  start.setUTCDate(1);
+  start.setUTCHours(0, 0, 0, 0);
+  return start;
+}
+
+// Given the documents that count toward the quota (already filtered to the
+// period window and to non-reported), returns the ids that fall beyond the
+// limit — i.e. the ones that appeared after the limit was reached, oldest kept.
+export function lockedDocIds(
+  docs: { id: string; createdAt: Date }[],
+  limit: number,
+): Set<string> {
+  if (!Number.isFinite(limit)) return new Set();
+  const locked = new Set<string>();
+  [...docs]
+    .sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime())
+    .forEach((doc, index) => {
+      if (index >= limit) locked.add(doc.id);
+    });
+  return locked;
+}
+
 // Only free is a non-paid plan; the rest map to a Stripe price.
 export const PAID_PLANS: AccountPlan[] = [AccountPlan.PRO, AccountPlan.PRO_MAX];
 

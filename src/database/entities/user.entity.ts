@@ -70,6 +70,9 @@ export class User {
   @Column('timestamptz', { nullable: true })
   seenAt: Date;
 
+  @Column('timestamptz', { nullable: true })
+  reportedAt: Date;
+
   @ManyToOne(() => Document, (document) => document.users)
   document: Document;
 

@@ -5,6 +5,7 @@ import { In, IsNull, LessThan, Not, Repository } from 'typeorm';
 
 import { Document } from '../database/entities/document.entity';
 import { Account } from '../database/entities/account.entity';
+import { User } from '../database/entities/user.entity';
 import {
   AccountPlan,
   DocumentStatuses,
@@ -13,7 +14,7 @@ import {
 import { NotificationsService } from '../notifications/notifications.service';
 import { UnsubscribeService } from '../notifications/unsubscribe.service';
 import { BillingService } from '../billing/billing.service';
-import { PLAN_LIMITS } from '../billing/plans';
+import { PLAN_LIMITS, docQuotaFor, periodWindowStart } from '../billing/plans';
 
 // Days after sending at which the initiator is reminded about unsigned documents.
 const REMINDER_SCHEDULE_DAYS = [3, 7, 14, 30];
@@ -82,6 +83,16 @@ export class RemindersService {
         continue;
       }
 
+      // If every pending signer is locked out of the document by their own plan
+      // limit, it just sits in their cabinet until they upgrade — no point
+      // reminding the initiator about signatures that can't happen yet.
+      if (this.billingService.enabled) {
+        const signerLocks = await Promise.all(
+          pendingSigners.map((signer) => this.isLockedForSigner(signer, document)),
+        );
+        if (signerLocks.every(Boolean)) continue;
+      }
+
       // Mark the stage first so a failing document is retried at the next
       // stage instead of on every run.
       await this.documentRepository.update(
@@ -104,5 +115,48 @@ export class RemindersService {
         );
       }
     }
+  }
+
+  // A signer with no account has no plan limit, so is never locked; otherwise
+  // defer to the account-level check.
+  private async isLockedForSigner(
+    signer: User,
+    document: Document,
+  ): Promise<boolean> {
+    const account = await this.accountRepository
+      .createQueryBuilder('account')
+      .where('LOWER(account.email) = :email', {
+        email: signer.email.toLowerCase(),
+      })
+      .getOne();
+    if (!account) return false;
+    return this.isLockedForAccount(account, document);
+  }
+
+  // A document is locked when it falls beyond the account's per-period quota —
+  // i.e. more non-reported cabinet documents in the period are at least as old.
+  private async isLockedForAccount(
+    account: Account,
+    document: Document,
+  ): Promise<boolean> {
+    const quota = docQuotaFor(account.plan ?? AccountPlan.FREE, account.billingInterval);
+    if (!Number.isFinite(quota.limit)) return false;
+
+    const windowStart = periodWindowStart(quota, account.currentPeriodStart);
+    if (document.createdAt < windowStart) return false;
+
+    const rank = await this.documentRepository
+      .createQueryBuilder('document')
+      .innerJoin(
+        'document.users',
+        'me',
+        'LOWER(me.email) = :email AND me.reportedAt IS NULL',
+        { email: account.email.toLowerCase() },
+      )
+      .where('document.createdAt >= :windowStart', { windowStart })
+      .andWhere('document.createdAt <= :until', { until: document.createdAt })
+      .getCount();
+
+    return rank > quota.limit;
   }
 }

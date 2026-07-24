@@ -7,7 +7,7 @@ import {
 import { InjectDataSource, InjectRepository } from '@nestjs/typeorm';
 import { ConfigService } from '@nestjs/config';
 import { EventEmitter2, OnEvent } from '@nestjs/event-emitter';
-import { DataSource, MoreThanOrEqual, Repository } from 'typeorm';
+import { DataSource, Repository } from 'typeorm';
 import { hash } from 'typeorm/util/StringUtils';
 import { v4 as uuidV4 } from 'uuid';
 import * as crypto from 'crypto';
@@ -37,7 +37,7 @@ import {
 } from '../common/enums/entities.enum';
 import { Account } from '../database/entities/account.entity';
 import { BillingService } from '../billing/billing.service';
-import { PLAN_LIMITS, docQuotaFor } from '../billing/plans';
+import { PLAN_LIMITS, docQuotaFor, periodWindowStart } from '../billing/plans';
 import { IDocumentWithInitials } from '../pdf/interfaces/pdf.interface';
 import { FindDocumentDto } from './dto/find-document.dto';
 import { CreateUserDto } from '../users/dto/create-user.dto';
@@ -84,33 +84,29 @@ export class DocumentsService {
   ): Promise<UploadDocumentDto> {
     if (this.billingService.enabled) {
       const plan = account.plan ?? AccountPlan.FREE;
-      const { limit, window } = docQuotaFor(plan, account.billingInterval);
+      const quota = docQuotaFor(plan, account.billingInterval);
 
-      if (Number.isFinite(limit)) {
-        let since: Date;
-        if (window === 'period') {
-          // Yearly plans budget documents across the subscription period.
-          since = account.currentPeriodStart ?? new Date(0);
-        } else {
-          since = new Date();
-          since.setUTCDate(1);
-          since.setUTCHours(0, 0, 0, 0);
-        }
+      if (Number.isFinite(quota.limit)) {
+        const windowStart = periodWindowStart(quota, account.currentPeriodStart);
 
-        const used = await this.documentRepository.count({
-          where: {
-            accountId: account.id,
-            createdAt: MoreThanOrEqual(since),
-          },
-        });
+        // The quota counts every document in the account's cabinet for the
+        // period — created, or received as a signer/watcher — minus any it
+        // reported. Recipients' limits never block the creator here.
+        const used = await this.documentRepository
+          .createQueryBuilder('document')
+          .innerJoin(
+            'document.users',
+            'me',
+            'LOWER(me.email) = :email AND me.reportedAt IS NULL',
+            { email: account.email.toLowerCase() },
+          )
+          .where('document.createdAt >= :windowStart', { windowStart })
+          .getCount();
 
-        if (used >= limit) {
-          const per = window === 'period' ? 'year' : 'month';
+        if (used >= quota.limit) {
           throw new ForbiddenException({
             code: 'PLAN_LIMIT_DOCS',
-            message: `Your plan allows ${limit} document${
-              limit === 1 ? '' : 's'
-            } per ${per}. Upgrade to create more.`,
+            message: 'You have reached your plan limit. Upgrade to create more documents.',
           });
         }
       }
