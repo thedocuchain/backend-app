@@ -48,6 +48,13 @@ export enum BlockchainTypes {
   SEI = 'sei',
 }
 
+export enum AiReviewStatuses {
+  PENDING = 'pending',
+  STREAMING = 'streaming',
+  COMPLETED = 'completed',
+  FAILED = 'failed',
+}
+
 export enum AuditLogEventTypes {
   STARTED = 'signing process started',
   COMPLETED = 'signing process completed',

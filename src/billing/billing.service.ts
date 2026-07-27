@@ -22,6 +22,7 @@ import {
   priceIdForPlan,
   intervalForPriceId,
   PAID_PLANS,
+  PLAN_LIMITS,
 } from './plans';
 
 // Stripe statuses that grant plan access. past_due keeps access during the
@@ -35,6 +36,7 @@ export interface BillingStatus {
   subscriptionStatus: string | null;
   currentPeriodEnd: Date | null;
   cancelAtPeriodEnd: boolean;
+  aiReview: boolean;
 }
 
 @Injectable()
@@ -66,13 +68,17 @@ export class BillingService {
   }
 
   getStatus(account: Account): BillingStatus {
+    const plan = account.plan ?? AccountPlan.FREE;
+
     return {
       billingEnabled: this.enabled,
-      plan: account.plan ?? AccountPlan.FREE,
+      plan,
       interval: account.billingInterval ?? BillingInterval.MONTH,
       subscriptionStatus: account.subscriptionStatus ?? null,
       currentPeriodEnd: account.currentPeriodEnd ?? null,
       cancelAtPeriodEnd: account.cancelAtPeriodEnd ?? false,
+      // Dormant until Stripe is configured.
+      aiReview: !this.enabled || PLAN_LIMITS[plan].aiReview,
     };
   }
 

@@ -4,20 +4,24 @@ import { StripeConfig } from '../configs/stripe.config';
 export interface PlanLimits {
   signersPerDoc: number;
   reminders: boolean;
+  aiReview: boolean;
 }
 
 export const PLAN_LIMITS: Record<AccountPlan, PlanLimits> = {
   [AccountPlan.FREE]: {
     signersPerDoc: 2,
     reminders: false,
+    aiReview: false,
   },
   [AccountPlan.PRO]: {
     signersPerDoc: 4,
     reminders: true,
+    aiReview: true,
   },
   [AccountPlan.PRO_MAX]: {
     signersPerDoc: Number.POSITIVE_INFINITY,
     reminders: true,
+    aiReview: true,
   },
 };
 

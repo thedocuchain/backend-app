@@ -10,6 +10,7 @@ import { BlacklistedEmail } from '../database/entities/blacklisted-email.entity'
 import { Account } from '../database/entities/account.entity';
 import { AccountSession } from '../database/entities/account-session.entity';
 import { EmailUnsubscribe } from '../database/entities/email-unsubscribe.entity';
+import { AiReview } from '../database/entities/ai-review.entity';
 
 export const getDatabaseConfig = async (
   configService: ConfigService,
@@ -34,6 +35,7 @@ export const getDatabaseConfig = async (
     Account,
     AccountSession,
     EmailUnsubscribe,
+    AiReview,
   ],
   extra: {
     connectionTimeoutMillis: 5000,
