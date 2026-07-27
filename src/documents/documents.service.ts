@@ -619,13 +619,17 @@ export class DocumentsService {
 
       if (transactionHash) {
         document.status = DocumentStatuses.BLOCKCHAINED;
+        const stampedFile = await this.stampTransactionHash(
+          document,
+          transactionHash,
+        );
         if (document.size < 20 * 1024 * 1024) {
           await this.notificationsService.sendEmail(
             document,
             undefined,
             updatedUser.name,
             transactionHash,
-            attachedFile,
+            stampedFile ?? attachedFile,
             undefined,
             auditLogBuffer,
           );
@@ -648,6 +652,31 @@ export class DocumentsService {
       }
     } catch (error) {
       console.error(`Error in blockchainSendHash: ${error.message}`);
+    }
+  }
+
+  private async stampTransactionHash(
+    document: Document,
+    transactionHash: string,
+  ): Promise<Buffer | undefined> {
+    try {
+      const file = await this.fileStorageService.getWithMetaData(
+        document.fileStorageId,
+      );
+      const stampedFile = await this.pdfService.stampBlockchainHash(
+        file.buffer,
+        document.blockchain,
+        transactionHash,
+      );
+      await this.fileStorageService.replaceFile(
+        document.fileStorageId,
+        stampedFile,
+        file.metadata,
+      );
+
+      return stampedFile;
+    } catch (error) {
+      console.error(`Error stamping transaction hash: ${error.message}`);
     }
   }
 

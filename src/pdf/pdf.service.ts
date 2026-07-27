@@ -15,10 +15,20 @@ import { pdfToPng } from 'pdf-to-png-converter';
 import { ReadDocumentDto } from '../documents/dto/read-document.dto';
 import { AuditLog } from '../database/entities/auditLog.entity';
 import { formatDateString, sizeFormatter } from '../common/utils/format.util';
-import { UserRoles } from '../common/enums/entities.enum';
+import { BlockchainTypes, UserRoles } from '../common/enums/entities.enum';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import { isCyrillic } from '../common/utils/font.util';
+
+const BLOCKCHAIN_LABELS: Record<string, string> = {
+  [BlockchainTypes.POLYGON]: 'Polygon',
+  [BlockchainTypes.BSC]: 'BSC',
+  [BlockchainTypes.SOLANA]: 'Solana',
+  [BlockchainTypes.MONAD]: 'Monad',
+  [BlockchainTypes.BASE]: 'Base',
+  [BlockchainTypes.BITCOIN]: 'Bitcoin',
+  [BlockchainTypes.SEI]: 'SEI',
+};
 
 @Injectable()
 export class PdfService {
@@ -324,6 +334,44 @@ export class PdfService {
     });
 
     return pdfDoc;
+  }
+
+  async stampBlockchainHash(
+    pdfBuffer: Buffer,
+    blockchain: string,
+    transactionHash: string,
+  ): Promise<Buffer> {
+    const pdfDoc = await PDFDocument.load(pdfBuffer);
+    pdfDoc.registerFontkit(fontkit);
+
+    const fontBytes = await this.readDefaultFontBytes('default');
+    const font = await pdfDoc.embedFont(fontBytes);
+
+    const label = BLOCKCHAIN_LABELS[blockchain] ?? 'Blockchain';
+    const text = `${label} Signing Hash: ${transactionHash}`;
+
+    const page = pdfDoc.getPages()[0];
+    const { width, height } = page.getSize();
+    const marginX = 40;
+    const maxWidth = width - marginX * 2;
+
+    let fontSize = 7;
+    while (
+      fontSize > 4.5 &&
+      font.widthOfTextAtSize(text, fontSize) > maxWidth
+    ) {
+      fontSize -= 0.25;
+    }
+
+    page.drawText(text, {
+      x: marginX,
+      y: height - 15,
+      size: fontSize,
+      font,
+      color: rgb(0.55, 0.58, 0.65),
+    });
+
+    return Buffer.from(await pdfDoc.save());
   }
 
   async convertPdfToPng(pdfBuffer: Buffer): Promise<Buffer> {
