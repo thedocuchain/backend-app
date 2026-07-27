@@ -263,14 +263,6 @@ export function generateEmailTemplate(
                     <table align="left" width="100%" border="0" cellPadding="0" cellSpacing="0" role="presentation" style="margin-bottom:9px">
                       <tbody style="width:100%">
                         <tr style="width:100%">
-                          <p style="font-size:14px;line-height:20px;margin:0;color:#626C7F;font-weight:700;letter-spacing:0.28px">Alternative method to track document status</p>
-                          <p style="font-size:14px;line-height:20px;margin:0;color:#626C7F;letter-spacing:0.28px">Visit <a href=${clientUrl} style="color:#626C7F;text-decoration:underline" target="_blank">DocuChain.io</a>, click "Check Signing Status" and enter the document ID: ${document.shortId.toUpperCase()}.</p>
-                        </tr>
-                      </tbody>
-                    </table>
-                    <table align="left" width="100%" border="0" cellPadding="0" cellSpacing="0" role="presentation" style="margin-bottom:9px">
-                      <tbody style="width:100%">
-                        <tr style="width:100%">
                           <p style="font-size:14px;line-height:20px;margin:0;color:#626C7F;font-weight:700;letter-spacing:0.28px">About DocuChain</p>
                           <p style="font-size:14px;line-height:20px;margin:0;color:#626C7F;letter-spacing:0.28px">Quick digital signing of documents. Signing documents with DocuChain is legally binding and complies with business practices in security and safety.<!-- --> <a href=${clientUrl} style="color:#626C7F;text-decoration:underline;line-height:20px;margin:0;letter-spacing:0.28px;white-space:nowrap" target="_blank">More →</a></p>
                         </tr>
