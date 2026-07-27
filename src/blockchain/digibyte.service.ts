@@ -16,7 +16,9 @@ export const DIGIBYTE_NETWORK: bitcoin.Network = {
 const SATS_PER_DGB = 100000000;
 const DUST_LIMIT = 546;
 const MAX_INPUTS = 3;
-const MAX_FEE_RATE = 50;
+// DigiByte's minRelayTxFee is 0.001 DGB/kB — anything under 100 sat/vB is rejected.
+const MIN_FEE_RATE = 100;
+const MAX_FEE_RATE = 400;
 
 export interface DigiByteInstance {
   keyPair: any;
@@ -154,7 +156,7 @@ export class DigiByteService {
   }
 
   private async getFeeRate(): Promise<number> {
-    const fallback = this.instance.config.feeRate || 20;
+    const fallback = this.instance.config.feeRate || MIN_FEE_RATE;
 
     try {
       const response = await axios.get(`${this.apiUrl}/fee-estimates`, {
@@ -163,13 +165,17 @@ export class DigiByteService {
       const economy = Number(response.data?.['144']);
 
       if (Number.isFinite(economy) && economy >= 1) {
-        return Math.min(Math.ceil(economy), MAX_FEE_RATE);
+        return this.clampFeeRate(Math.ceil(economy));
       }
     } catch (error) {
       this.logger.warn(`Failed to fetch DigiByte fee rate: ${error.message}`);
     }
 
-    return Math.max(fallback, 1);
+    return this.clampFeeRate(fallback);
+  }
+
+  private clampFeeRate(rate: number): number {
+    return Math.min(Math.max(rate, MIN_FEE_RATE), MAX_FEE_RATE);
   }
 
   async sendTransaction(hash: string): Promise<string> {

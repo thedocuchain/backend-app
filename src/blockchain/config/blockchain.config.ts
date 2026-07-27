@@ -38,7 +38,7 @@ export class BlockchainConfigService {
         transactionValue: '0.001',
         network: 'mainnet',
         feeRate: parseInt(
-          this.configService.get<string>('DIGIBYTE_FEE_RATE') || '20',
+          this.configService.get<string>('DIGIBYTE_FEE_RATE') || '150',
         ),
       },
       [BlockchainTypes.SOLANA]: {
