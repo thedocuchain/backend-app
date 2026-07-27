@@ -19,6 +19,7 @@ import { BlockchainTypes } from '../common/enums/entities.enum';
 import { BlockchainConfigService } from './config/blockchain.config';
 import { BlockchainConfig } from './interfaces/blockchain-config.interface';
 import { BitcoinService } from './bitcoin.service';
+import { DigiByteService } from './digibyte.service';
 
 interface EvmBlockchainInstance {
   web3: Web3;
@@ -46,6 +47,7 @@ export class BlockchainService implements OnModuleInit {
   constructor(
     private readonly configService: ConfigService,
     private readonly blockchainConfigService: BlockchainConfigService,
+    private readonly digiByteService: DigiByteService,
   ) {}
 
   async onModuleInit(): Promise<void> {
@@ -80,6 +82,8 @@ export class BlockchainService implements OnModuleInit {
       await this.initializeSolanaBlockchain(blockchain, config);
     } else if (blockchain === BlockchainTypes.BITCOIN) {
       await this.bitcoinService.initialize(config);
+    } else if (blockchain === BlockchainTypes.DIGIBYTE) {
+      await this.digiByteService.initialize(config);
     } else {
       this.initializeEvmBlockchain(blockchain, config);
     }
@@ -136,7 +140,9 @@ export class BlockchainService implements OnModuleInit {
   private async parseSolanaKeypair(key: string): Promise<Keypair> {
     let bytes: Uint8Array;
     if (key.includes(',')) {
-      bytes = Uint8Array.from(key.split(',').map((s) => parseInt(s.trim(), 10)));
+      bytes = Uint8Array.from(
+        key.split(',').map((s) => parseInt(s.trim(), 10)),
+      );
     } else {
       const hex = key.replace(/^0x/, '');
       if (/^[0-9a-fA-F]+$/.test(hex) && hex.length % 2 === 0) {
@@ -218,6 +224,11 @@ export class BlockchainService implements OnModuleInit {
       return;
     }
 
+    if (blockchain === BlockchainTypes.DIGIBYTE) {
+      await this.digiByteService.ensureNodeAvailability();
+      return;
+    }
+
     if (!(await this.isNodeAvailable(blockchain))) {
       const instance = this.getBlockchainInstance(blockchain);
       this.logger.warn(
@@ -244,6 +255,8 @@ export class BlockchainService implements OnModuleInit {
       return this.sendSolanaTransaction(hash, blockchain);
     } else if (blockchain === BlockchainTypes.BITCOIN) {
       return this.bitcoinService.sendTransaction(hash);
+    } else if (blockchain === BlockchainTypes.DIGIBYTE) {
+      return this.digiByteService.sendTransaction(hash);
     } else {
       return this.sendEvmTransaction(hash, blockchain);
     }

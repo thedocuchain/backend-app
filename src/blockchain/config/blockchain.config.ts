@@ -28,17 +28,18 @@ export class BlockchainConfigService {
         gasLimit: 4000000,
         gasPriceMultiplier: 140,
       },
-      [BlockchainTypes.BSC]: {
+      [BlockchainTypes.DIGIBYTE]: {
         rpcUrls: [
-          this.configService.get<string>('BSC_RPC_NODE'),
-          this.configService.get<string>('BSC_RPC_NODE_ANC'),
-          this.configService.get<string>('BSC_RPC_NODE_DEFI'),
+          this.configService.get<string>('DIGIBYTE_RPC_NODE') ||
+            'https://digiexplorer.info/api',
+          this.configService.get<string>('DIGIBYTE_RPC_NODE_2'),
         ].filter(Boolean),
-        privateKey: this.configService.get<string>('BSC_PRIVATE_KEY'),
-        chainId: 56,
-        transactionValue: '0.0000001',
-        gasLimit: 4000000,
-        gasPriceMultiplier: 140,
+        privateKey: this.configService.get<string>('DIGIBYTE_PRIVATE_KEY'),
+        transactionValue: '0.001',
+        network: 'mainnet',
+        feeRate: parseInt(
+          this.configService.get<string>('DIGIBYTE_FEE_RATE') || '20',
+        ),
       },
       [BlockchainTypes.SOLANA]: {
         rpcUrls: [

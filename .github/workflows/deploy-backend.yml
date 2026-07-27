@@ -36,10 +36,10 @@ jobs:
         JWT_SECRET: ${{ secrets.JWT_SECRET }}
         MATIC_PRIVATE_KEY: ${{ secrets.MATIC_PRIVATE_KEY }}
         POLYGON_RPC_NODE: ${{ secrets.POLYGON_RPC_NODE }}
-        BSC_RPC_NODE: ${{ secrets.BSC_RPC_NODE }}
-        BSC_RPC_NODE_ANC: ${{ secrets.BSC_RPC_NODE_ANC }}
-        BSC_RPC_NODE_DEFI: ${{ secrets.BSC_RPC_NODE_DEFI }}
-        BSC_PRIVATE_KEY: ${{ secrets.BSC_PRIVATE_KEY }}
+        DIGIBYTE_PRIVATE_KEY: ${{ secrets.DIGIBYTE_PRIVATE_KEY }}
+        DIGIBYTE_RPC_NODE: ${{ secrets.DIGIBYTE_RPC_NODE }}
+        DIGIBYTE_RPC_NODE_2: ${{ secrets.DIGIBYTE_RPC_NODE_2 }}
+        DIGIBYTE_FEE_RATE: ${{ secrets.DIGIBYTE_FEE_RATE }}
         SOLANA_RPC_NODE: ${{ secrets.SOLANA_RPC_NODE }}
         SOLANA_RPC_NODE_ANC: ${{ secrets.SOLANA_RPC_NODE_ANC }}
         SOLANA_PRIVATE_KEY: ${{ secrets.SOLANA_PRIVATE_KEY }}

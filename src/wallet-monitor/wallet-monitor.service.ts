@@ -6,8 +6,9 @@ import Web3 from 'web3';
 import { Connection, Keypair, PublicKey, clusterApiUrl } from '@solana/web3.js';
 import { BlockchainTypes } from '../common/enums/entities.enum';
 import { BlockchainConfigService } from '../blockchain/config/blockchain.config';
+import { DigiByteService } from '../blockchain/digibyte.service';
 
-type ChainKind = 'evm' | 'solana';
+type ChainKind = 'evm' | 'solana' | 'utxo';
 
 interface MonitoredChain {
   blockchain: BlockchainTypes;
@@ -32,6 +33,7 @@ export class WalletMonitorService implements OnModuleInit {
   constructor(
     private readonly config: ConfigService,
     private readonly blockchainConfig: BlockchainConfigService,
+    private readonly digiByteService: DigiByteService,
   ) {
     this.tgToken = this.config.get<string>('WALLET_ALERT_TG_BOT_TOKEN');
     this.tgChatId = this.config.get<string>('WALLET_ALERT_TG_CHAT_ID');
@@ -41,7 +43,7 @@ export class WalletMonitorService implements OnModuleInit {
     // Thresholds are native-token amounts ≈ $1 — override via WALLET_ALERT_<CHAIN>_MIN.
     this.chains = [
       { blockchain: BlockchainTypes.POLYGON, label: 'Polygon', symbol: 'POL', kind: 'evm', threshold: this.min('POLYGON', 5), explorer: 'https://polygonscan.com/address/' },
-      { blockchain: BlockchainTypes.BSC, label: 'BNB Chain', symbol: 'BNB', kind: 'evm', threshold: this.min('BSC', 0.0015), explorer: 'https://bscscan.com/address/' },
+      { blockchain: BlockchainTypes.DIGIBYTE, label: 'DigiByte', symbol: 'DGB', kind: 'utxo', threshold: this.min('DIGIBYTE', 10), explorer: 'https://digiexplorer.info/address/' },
       { blockchain: BlockchainTypes.BASE, label: 'Base', symbol: 'ETH', kind: 'evm', threshold: this.min('BASE', 0.0004), explorer: 'https://basescan.org/address/' },
       { blockchain: BlockchainTypes.SEI, label: 'Sei', symbol: 'SEI', kind: 'evm', threshold: this.min('SEI', 4), explorer: 'https://seitrace.com/address/' },
       { blockchain: BlockchainTypes.SOLANA, label: 'Solana', symbol: 'SOL', kind: 'solana', threshold: this.min('SOLANA', 0.01), explorer: 'https://solscan.io/account/' },
@@ -115,6 +117,10 @@ export class WalletMonitorService implements OnModuleInit {
       return Number(wei) / 1e18;
     }
 
+    if (chain.kind === 'utxo') {
+      return this.digiByteService.getBalance(rpc, address);
+    }
+
     const connection = new Connection(
       rpc || clusterApiUrl((cfg.cluster as any) || 'mainnet-beta'),
       'confirmed',
@@ -128,6 +134,9 @@ export class WalletMonitorService implements OnModuleInit {
     if (chain.kind === 'evm') {
       const key = cfg.privateKey.startsWith('0x') ? cfg.privateKey : `0x${cfg.privateKey}`;
       return new Web3().eth.accounts.privateKeyToAccount(key).address;
+    }
+    if (chain.kind === 'utxo') {
+      return this.digiByteService.deriveAddress(cfg.privateKey);
     }
     return this.solanaAddress(cfg.privateKey);
   }

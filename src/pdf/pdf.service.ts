@@ -15,14 +15,19 @@ import { pdfToPng } from 'pdf-to-png-converter';
 import { ReadDocumentDto } from '../documents/dto/read-document.dto';
 import { AuditLog } from '../database/entities/auditLog.entity';
 import { formatDateString, sizeFormatter } from '../common/utils/format.util';
-import { BlockchainTypes, UserRoles } from '../common/enums/entities.enum';
+import {
+  BlockchainTypes,
+  LEGACY_BLOCKCHAINS,
+  UserRoles,
+} from '../common/enums/entities.enum';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import { isCyrillic } from '../common/utils/font.util';
 
 const BLOCKCHAIN_LABELS: Record<string, string> = {
   [BlockchainTypes.POLYGON]: 'Polygon',
-  [BlockchainTypes.BSC]: 'BSC',
+  [BlockchainTypes.DIGIBYTE]: 'DigiByte',
+  [LEGACY_BLOCKCHAINS.BSC]: 'BSC',
   [BlockchainTypes.SOLANA]: 'Solana',
   [BlockchainTypes.MONAD]: 'Monad',
   [BlockchainTypes.BASE]: 'Base',

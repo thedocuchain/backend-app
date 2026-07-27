@@ -3,6 +3,7 @@ import { Document } from '../../database/entities/document.entity';
 import {
   BlockchainTypes,
   DocumentStatuses,
+  LEGACY_BLOCKCHAINS,
   UserRoles,
 } from '../enums/entities.enum';
 import { ReadDocumentDto } from '../../documents/dto/read-document.dto';
@@ -28,9 +29,10 @@ function getBlockchainExplorerUrl(
   blockchain: BlockchainTypes,
   hash: string,
 ): string {
-  const explorerUrls = {
+  const explorerUrls: Record<string, string> = {
     [BlockchainTypes.POLYGON]: `https://polygonscan.com/tx/${hash}`,
-    [BlockchainTypes.BSC]: `https://bscscan.com/tx/${hash}`,
+    [BlockchainTypes.DIGIBYTE]: `https://digiexplorer.info/tx/${hash}`,
+    [LEGACY_BLOCKCHAINS.BSC]: `https://bscscan.com/tx/${hash}`,
     [BlockchainTypes.SOLANA]: `https://solscan.io/tx/${hash}`,
     [BlockchainTypes.MONAD]: `http://testnet.monadexplorer.com/tx/${hash}`,
     [BlockchainTypes.BASE]: `https://basescan.org/tx/${hash}`,

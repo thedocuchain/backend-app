@@ -40,13 +40,18 @@ export enum FileLinkTypes {
 
 export enum BlockchainTypes {
   POLYGON = 'polygon',
-  BSC = 'bsc',
+  DIGIBYTE = 'digibyte',
   SOLANA = 'solana',
   MONAD = 'monad',
   BASE = 'base',
   BITCOIN = 'bitcoin',
   SEI = 'sei',
 }
+
+// Chains no longer offered, kept for documents anchored before they were dropped.
+export const LEGACY_BLOCKCHAINS = {
+  BSC: 'bsc',
+} as const;
 
 export enum AiReviewStatuses {
   PENDING = 'pending',
