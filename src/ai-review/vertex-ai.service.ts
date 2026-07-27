@@ -68,7 +68,7 @@ export class VertexAiService {
         contents: [{ role: 'user', parts }],
         systemInstruction: { parts: [{ text: systemInstruction }] },
         generationConfig: {
-          temperature: 0,
+          temperature: 0.1,
           maxOutputTokens: 4096,
         },
       },
