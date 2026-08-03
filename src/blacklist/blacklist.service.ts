@@ -12,13 +12,20 @@ export class BlacklistService {
   ) {}
 
   async isBlacklisted(email: string): Promise<boolean> {
+    return Boolean(await this.getBlockedAt(email));
+  }
+
+  // Returns the moment the email was blacklisted, or null if it is not.
+  // Documents created before this moment stay available to the blocked
+  // account; everything created after it is hidden from signing/viewing.
+  async getBlockedAt(email: string): Promise<Date | null> {
     if (!email) {
-      return false;
+      return null;
     }
-    const count = await this.blacklistRepository.count({
+    const entry = await this.blacklistRepository.findOne({
       where: { email: email.toLowerCase() },
     });
-    return count > 0;
+    return entry?.createdAt ?? null;
   }
 
   async add(

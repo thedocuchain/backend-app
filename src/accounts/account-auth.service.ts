@@ -16,6 +16,7 @@ import { Account } from '../database/entities/account.entity';
 import { AccountSession } from '../database/entities/account-session.entity';
 import { VerificationService } from '../verification/verification.service';
 import { NotificationsService } from '../notifications/notifications.service';
+import { BlacklistService } from '../blacklist/blacklist.service';
 import { hashPassword, verifyPassword } from '../common/utils/password.util';
 import { toPublicAccount, PublicAccount } from './account.mapper';
 import { AccountJwtPayload } from './interfaces/account-token.interface';
@@ -50,6 +51,7 @@ export class AccountAuthService {
     private readonly jwtService: JwtService,
     private readonly verificationService: VerificationService,
     private readonly notificationsService: NotificationsService,
+    private readonly blacklistService: BlacklistService,
     configService: ConfigService,
   ) {
     this.secret = configService.get<string>('JWT_SECRET');
@@ -301,7 +303,8 @@ export class AccountAuthService {
       { secret: this.secret, expiresIn: TOKEN_TTL },
     );
 
-    return { accessToken, account: toPublicAccount(account) };
+    const frozen = await this.blacklistService.isBlacklisted(account.email);
+    return { accessToken, account: toPublicAccount(account, frozen) };
   }
 
   private async sendCode(account: Account): Promise<void> {

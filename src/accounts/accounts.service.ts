@@ -11,6 +11,10 @@ import { Document } from '../database/entities/document.entity';
 import { User } from '../database/entities/user.entity';
 import { AuthService } from '../auth/auth.service';
 import { BlacklistService } from '../blacklist/blacklist.service';
+import {
+  accountFrozenException,
+  isBlockedDocument,
+} from '../blacklist/frozen';
 import { FeedbacksService } from '../feedbacks/feedbacks.service';
 import { UnsubscribeService } from '../notifications/unsubscribe.service';
 import { DocumentStatuses, UserRoles } from '../common/enums/entities.enum';
@@ -52,6 +56,7 @@ export interface AccountDocument {
   needsMySign: boolean;
   isNew: boolean;
   locked: boolean;
+  frozen: boolean;
 }
 
 @Injectable()
@@ -86,6 +91,11 @@ export class AccountsService {
     await this.unsubscribeService.resubscribe(account.email);
   }
 
+  async getMe(account: Account): Promise<PublicAccount> {
+    const frozen = await this.blacklistService.isBlacklisted(account.email);
+    return toPublicAccount(account, frozen);
+  }
+
   async updateProfile(
     account: Account,
     updateAccountDto: UpdateAccountDto,
@@ -97,7 +107,11 @@ export class AccountsService {
       account.avatarImage = updateAccountDto.avatarImage;
     }
 
-    return toPublicAccount(await this.accountRepository.save(account));
+    const saved = await this.accountRepository.save(account);
+    return toPublicAccount(
+      saved,
+      await this.blacklistService.isBlacklisted(saved.email),
+    );
   }
 
   async updatePassword(
@@ -130,7 +144,11 @@ export class AccountsService {
       throw new BadRequestException('Provide signImage or signFont.');
     }
 
-    return toPublicAccount(await this.accountRepository.save(account));
+    const saved = await this.accountRepository.save(account);
+    return toPublicAccount(
+      saved,
+      await this.blacklistService.isBlacklisted(saved.email),
+    );
   }
 
   async sendSupportTicket(
@@ -146,6 +164,7 @@ export class AccountsService {
 
   async listDocuments(account: Account): Promise<AccountDocument[]> {
     const email = account.email.toLowerCase();
+    const blockedAt = await this.blacklistService.getBlockedAt(email);
 
     const documents = await this.documentRepository
       .createQueryBuilder('document')
@@ -216,6 +235,7 @@ export class AccountsService {
         needsMySign,
         isNew,
         locked: locked.has(document.id),
+        frozen: isBlockedDocument(blockedAt, document.createdAt),
       };
     });
   }
@@ -251,6 +271,11 @@ export class AccountsService {
     );
     if (!signer) {
       throw new ForbiddenException('You are not a signer of this document.');
+    }
+
+    const blockedAt = await this.blacklistService.getBlockedAt(email);
+    if (isBlockedDocument(blockedAt, document.createdAt)) {
+      throw accountFrozenException();
     }
 
     const listed = await this.listDocuments(account);

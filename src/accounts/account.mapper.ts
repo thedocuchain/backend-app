@@ -9,10 +9,11 @@ export interface PublicAccount {
   signFont: string | null;
   signImage: string | null;
   plan: AccountPlan;
+  frozen: boolean;
   createdAt: Date;
 }
 
-export function toPublicAccount(account: Account): PublicAccount {
+export function toPublicAccount(account: Account, frozen = false): PublicAccount {
   return {
     id: account.id,
     email: account.email,
@@ -21,6 +22,7 @@ export function toPublicAccount(account: Account): PublicAccount {
     signFont: account.signFont ?? null,
     signImage: account.signImage ?? null,
     plan: account.plan ?? AccountPlan.FREE,
+    frozen,
     createdAt: account.createdAt,
   };
 }

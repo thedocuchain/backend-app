@@ -52,6 +52,10 @@ import { BlockchainService } from '../blockchain/blockchain.service';
 import { AuditLogsService } from '../audit-logs/audit-logs.service';
 import { TransformFormatService } from '../transform-format/transform-format.service';
 import { BlacklistService } from '../blacklist/blacklist.service';
+import {
+  accountFrozenException,
+  isBlockedDocument,
+} from '../blacklist/frozen';
 import { VerificationService } from '../verification/verification.service';
 
 @Injectable()
@@ -82,6 +86,10 @@ export class DocumentsService {
     file: Express.Multer.File,
     account: Account,
   ): Promise<UploadDocumentDto> {
+    if (await this.blacklistService.isBlacklisted(account.email)) {
+      throw accountFrozenException();
+    }
+
     if (this.billingService.enabled) {
       const plan = account.plan ?? AccountPlan.FREE;
       const quota = docQuotaFor(plan, account.billingInterval);
@@ -213,9 +221,7 @@ export class DocumentsService {
       initiator &&
       (await this.blacklistService.isBlacklisted(initiator.email))
     ) {
-      throw new BadRequestException(
-        'This sender is blocked from sending documents.',
-      );
+      throw accountFrozenException();
     }
 
     if (this.billingService.enabled && document.accountId) {
@@ -440,6 +446,11 @@ export class DocumentsService {
       throw new BadRequestException(
         'You are not allowed to sign this document.',
       );
+    }
+
+    const blockedAt = await this.blacklistService.getBlockedAt(user.email);
+    if (isBlockedDocument(blockedAt, document.createdAt)) {
+      throw accountFrozenException();
     }
 
     if (user.signatures[0].signed) {
@@ -693,6 +704,14 @@ export class DocumentsService {
       }
       await this.notificationsService.sendEmail(document, user);
     } else {
+      const initiator = document.users.find((user) => user.isInitiator);
+      if (
+        initiator &&
+        (await this.blacklistService.isBlacklisted(initiator.email))
+      ) {
+        throw accountFrozenException();
+      }
+
       await this.notificationsService.sendEmail(document);
 
       if (document.status === DocumentStatuses.RECIPIENT_ADDED) {

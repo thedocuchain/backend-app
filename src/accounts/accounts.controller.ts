@@ -15,7 +15,6 @@ import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 
 import { AccountsService } from './accounts.service';
 import { AccountAuthService } from './account-auth.service';
-import { toPublicAccount } from './account.mapper';
 import { UpdateAccountDto } from './dto/update-account.dto';
 import { UpdatePasswordDto } from './dto/update-password.dto';
 import { SaveSignatureDto } from './dto/save-signature.dto';
@@ -35,7 +34,7 @@ export class AccountsController {
 
   @Get()
   me(@Request() req) {
-    return toPublicAccount(req.user.account);
+    return this.accountsService.getMe(req.user.account);
   }
 
   @Patch()
