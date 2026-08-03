@@ -23,19 +23,21 @@ email.
 
 ## Features
 
+- Accounts with email + password or Google sign-in, with revocable sessions
 - Multi-signer document workflows with email invitations and reminders
 - On-chain hash anchoring across seven networks
-- Encrypted document storage on Google Cloud Storage with signed-URL delivery
-- JWT auth, reCAPTCHA v3 verification on public endpoints
+- Document storage on Google Cloud Storage with signed-URL delivery
+- Stripe billing: paid plans, Checkout, Customer Portal, plan-limit enforcement
+- AI document review (Vertex AI Gemini)
 - Mailchimp Transactional (Mandrill) for outbound email
+- Telegram notifications for support feedback and wallet balance alerts
 - Swagger API docs in non-production environments
-- Optional Telegram bot for ops notifications
 
 ## Supported chains
 
-Polygon · BSC · Solana · Monad · Base · Bitcoin · Sei. Each chain has its own
-private key configured via env vars; only the chains you configure are loaded
-at boot.
+Polygon · DigiByte · Solana · Monad · Base · Bitcoin · Sei. Each chain has its
+own private key configured via env vars; only the chains you configure are
+loaded at boot.
 
 ## Quick start
 
@@ -53,7 +55,7 @@ npm run start:dev
 ```
 
 The API listens on `PORT` (default `3000`). Swagger docs are mounted at
-`/api/docs` in non-production environments.
+`/api` in non-production environments.
 
 ## Configuration
 
@@ -67,12 +69,15 @@ for the full set. Highlights:
 | `MANDRILL_*`, `MAIL_FROM_*` | Mailchimp Transactional (Mandrill) credentials and From identity for outbound signing-request emails |
 | `JWT_SECRET` | Auth token signing |
 | `{CHAIN}_PRIVATE_KEY`, `{CHAIN}_RPC_NODE` | Per-chain wallet and RPC endpoint |
-| `RECAPTCHA_SECRET_KEY` | Server-side recaptcha verification |
-| `TG_BOT_TOKEN`, `TG_CHAT_ID` | Optional ops notifications |
+| `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `GOOGLE_CALLBACK_URL` | Google sign-in for accounts |
+| `STRIPE_*` | Billing; stays dormant until the keys are configured |
+| `VERTEX_AI_*` | AI document review |
+| `TG_BOT_TOKEN`, `TG_CHAT_ID` | Support feedback notifications |
+| `WALLET_ALERT_TG_*` | Wallet balance alerts |
 
-Public RPC URLs are included as fallbacks in `.env.example`. For production
-throughput, point each chain at a metered provider (Ankr, Alchemy, QuickNode,
-etc.).
+Some chains fall back to public RPC URLs when none are configured. For
+production throughput, point each chain at a metered provider (Ankr, Alchemy,
+QuickNode, etc.).
 
 ## Database migrations
 
