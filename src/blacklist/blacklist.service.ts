@@ -15,9 +15,6 @@ export class BlacklistService {
     return Boolean(await this.getBlockedAt(email));
   }
 
-  // Returns the moment the email was blacklisted, or null if it is not.
-  // Documents created before this moment stay available to the blocked
-  // account; everything created after it is hidden from signing/viewing.
   async getBlockedAt(email: string): Promise<Date | null> {
     if (!email) {
       return null;

@@ -13,7 +13,6 @@ export function accountFrozenException(): ForbiddenException {
   });
 }
 
-// A document created strictly before the block moment stays available.
 export function isBlockedDocument(blockedAt: Date | null, createdAt: Date): boolean {
   if (!blockedAt) {
     return false;
