@@ -7,8 +7,15 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { In, Repository } from 'typeorm';
 
 import { Account } from '../database/entities/account.entity';
+import { AccountSession } from '../database/entities/account-session.entity';
+import { AiReview } from '../database/entities/ai-review.entity';
+import { AuditLog } from '../database/entities/auditLog.entity';
 import { Document } from '../database/entities/document.entity';
+import { EmailUnsubscribe } from '../database/entities/email-unsubscribe.entity';
+import { Feedback } from '../database/entities/feedback.entity';
+import { Signature } from '../database/entities/signature.entity';
 import { User } from '../database/entities/user.entity';
+import { VerificationCode } from '../database/entities/verification-code.entity';
 import { AuthService } from '../auth/auth.service';
 import { BlacklistService } from '../blacklist/blacklist.service';
 import {
@@ -16,6 +23,7 @@ import {
   isBlockedDocument,
 } from '../blacklist/frozen';
 import { FeedbacksService } from '../feedbacks/feedbacks.service';
+import { FileStorageService } from '../file-storage/file-storage.service';
 import { UnsubscribeService } from '../notifications/unsubscribe.service';
 import { DocumentStatuses, UserRoles } from '../common/enums/entities.enum';
 import { BillingService } from '../billing/billing.service';
@@ -73,6 +81,7 @@ export class AccountsService {
     private readonly feedbacksService: FeedbacksService,
     private readonly unsubscribeService: UnsubscribeService,
     private readonly billingService: BillingService,
+    private readonly fileStorageService: FileStorageService,
   ) {}
 
   async getReminderSubscription(
@@ -329,5 +338,82 @@ export class AccountsService {
       { id: In(mine.map((user) => user.id)) },
       { reportedAt: new Date() },
     );
+  }
+
+  async deleteAccount(account: Account): Promise<void> {
+    await this.billingService.cancelSubscription(account);
+
+    const email = account.email.toLowerCase();
+
+    const owned = await this.documentRepository.find({
+      where: { accountId: account.id },
+      select: ['id'],
+    });
+    const participated = await this.documentRepository
+      .createQueryBuilder('document')
+      .innerJoin('document.users', 'users', 'LOWER(users.email) = :email', {
+        email,
+      })
+      .select('document.id')
+      .getRawMany();
+
+    const ids = [
+      ...new Set([
+        ...owned.map((document) => document.id),
+        ...participated.map((row) => row.document_id),
+      ]),
+    ];
+    const documents = ids.length
+      ? await this.documentRepository.find({
+          where: { id: In(ids) },
+          relations: { users: true },
+        })
+      : [];
+
+    const removable = documents.filter((document) =>
+      document.users.every((user) => user.email.toLowerCase() === email),
+    );
+    const sharedOwned = documents.filter(
+      (document) =>
+        !removable.includes(document) && document.accountId === account.id,
+    );
+
+    for (const document of removable) {
+      await this.fileStorageService.delete(document.fileStorageId);
+      if (document.imageStorageId) {
+        await this.fileStorageService.delete(document.imageStorageId);
+      }
+    }
+
+    await this.documentRepository.manager.transaction(async (manager) => {
+      if (removable.length) {
+        const removableIds = removable.map((document) => document.id);
+        await manager.delete(AuditLog, { documentId: In(removableIds) });
+        await manager.delete(AiReview, { documentId: In(removableIds) });
+        await manager
+          .createQueryBuilder()
+          .delete()
+          .from(Signature)
+          .where(
+            '"userId" IN (SELECT id FROM "user" WHERE "documentId" IN (:...ids))',
+            { ids: removableIds },
+          )
+          .execute();
+        await manager.delete(User, { document: { id: In(removableIds) } });
+        await manager.delete(Document, { id: In(removableIds) });
+      }
+      if (sharedOwned.length) {
+        await manager.update(
+          Document,
+          { id: In(sharedOwned.map((document) => document.id)) },
+          { accountId: null },
+        );
+      }
+      await manager.delete(VerificationCode, { email: account.email });
+      await manager.delete(Feedback, { email: account.email });
+      await manager.delete(EmailUnsubscribe, { email: account.email });
+      await manager.delete(AccountSession, { account: { id: account.id } });
+      await manager.remove(account);
+    });
   }
 }

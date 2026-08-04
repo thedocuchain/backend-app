@@ -145,6 +145,11 @@ export class BillingService {
     return session.url;
   }
 
+  async cancelSubscription(account: Account): Promise<void> {
+    if (!this.enabled || !this.hasActiveSubscription(account)) return;
+    await this.stripe().subscriptions.cancel(account.stripeSubscriptionId);
+  }
+
   async createPortalSession(account: Account): Promise<string> {
     if (!account.stripeCustomerId) {
       throw new BadRequestException('No billing account yet');

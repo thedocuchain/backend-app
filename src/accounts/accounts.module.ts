@@ -11,6 +11,7 @@ import { VerificationModule } from '../verification/verification.module';
 import { NotificationsModule } from '../notifications/notifications.module';
 import { BlacklistModule } from '../blacklist/blacklist.module';
 import { FeedbacksModule } from '../feedbacks/feedbacks.module';
+import { FileStorageModule } from '../file-storage/file-storage.module';
 import { BillingModule } from '../billing/billing.module';
 import { AccountsService } from './accounts.service';
 import { AccountAuthService } from './account-auth.service';
@@ -29,6 +30,7 @@ import { AccountsController } from './accounts.controller';
     NotificationsModule,
     BlacklistModule,
     FeedbacksModule,
+    FileStorageModule,
     BillingModule,
   ],
   controllers: [AuthController, GoogleAuthController, AccountsController],

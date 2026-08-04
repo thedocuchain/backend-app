@@ -86,6 +86,12 @@ export class AccountsController {
     );
   }
 
+  @Delete()
+  @HttpCode(200)
+  async deleteAccount(@Request() req) {
+    await this.accountsService.deleteAccount(req.user.account);
+  }
+
   @Get('reminders/subscription')
   getReminderSubscription(@Request() req) {
     return this.accountsService.getReminderSubscription(req.user.account);
